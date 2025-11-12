@@ -93,8 +93,10 @@ The Linux implementation can be found in the following files:
 Generate the project by runnning the following in a command prompt at the project root:
 - Windows:
   * ```mkdir build && cd build```
-  * To create a Visual Studio x86 configuration: ```cmake .. -G "Visual Studio 16 2019" -A Win32 .```
-  * To create a Visual Studio x64 configuration: ```cmake .. -G "Visual Studio 16 2019" -A x64 .```
+  * ```cmake .. -G "Visual Studio 17 2022" -A x64 -D SDL=ON```
+  * ```cmake --build . --config Release```
+  * (Use ```-A Win32``` instead of ```-A x64``` if you specifically need a 32-bit build, and keep ```-D SDL=ON```.)
+  * Run the commands from an “x64 Native Tools Command Prompt for VS 2022” (with the Desktop development with C++ workload installed) so CMake can locate MSVC.
 - Linux:
   * ```mkdir build && cd build```
   * ```cmake .. -DCMAKE_CXX_COMPILER=clang++ && cmake --build .```
