@@ -30,7 +30,9 @@ add_executable (
     src/SettingsManager.cpp
     src/Stick.cpp
     src/JoyShock.cpp
+    src/Telemetry.cpp
     include/TriggerEffectGenerator.h
+    include/Telemetry.h
     include/InputHelpers.h
     include/PlatformDefinitions.h
     include/TrayIcon.h

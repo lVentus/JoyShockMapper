@@ -233,6 +233,8 @@ enum class SettingID
 	MOUSELIKE_FACTOR,
 	RETURN_DEADZONE_ANGLE,
 	RETURN_DEADZONE_ANGLE_CUTOFF,
+	TELEMETRY_ENABLED,
+	TELEMETRY_PORT,
 };
 
 // constexpr are like #define but with respect to typeness

@@ -10,7 +10,9 @@
 #include "AutoConnect.h"
 #include "SettingsManager.h"
 #include "JoyShock.h"
+#include "Telemetry.h"
 #include <filesystem>
+#include <algorithm>
 #define _USE_MATH_DEFINES
 #include <math.h> // M_PI
 
@@ -42,6 +44,20 @@ unordered_map<int, shared_ptr<JoyShock>> handle_to_joyshock;
 
 int input_pipe_fd[2];
 int triggerCalibrationStep = 0;
+
+static void RefreshTelemetrySettings()
+{
+	auto telemetryEnabled = SettingsManager::get<Switch>(SettingID::TELEMETRY_ENABLED);
+	auto telemetryPort = SettingsManager::get<int>(SettingID::TELEMETRY_PORT);
+	if (!telemetryEnabled || !telemetryPort)
+	{
+		return;
+	}
+
+	int portValue = std::clamp(telemetryPort->value(), 1, 65535);
+	const bool enabled = telemetryEnabled->value() == Switch::ON;
+	Telemetry::Configure(enabled, static_cast<uint16_t>(portValue));
+}
 
 struct TOUCH_POINT
 {
@@ -824,7 +840,8 @@ void joyShockPollCallback(int jcHandle, JOY_SHOCK_STATE state, JOY_SHOCK_STATE l
 
 	// apply calibration factor
 	// get input velocity
-	float magnitude = sqrt(gyroX * gyroX + gyroY * gyroY);
+	float omega = sqrt(gyroX * gyroX + gyroY * gyroY);
+	float magnitude = omega;
 	// COUT << "Gyro mag: " << setprecision(4) << magnitude << '\n';
 	// calculate position on minThreshold to maxThreshold scale
 	float minThreshold = jc->getSetting(SettingID::MIN_GYRO_THRESHOLD);
@@ -833,23 +850,42 @@ void joyShockPollCallback(int jcHandle, JOY_SHOCK_STATE state, JOY_SHOCK_STATE l
 	if (magnitude < 0.0f)
 		magnitude = 0.0f;
 	float denom = maxThreshold - minThreshold;
-	float newSensitivity;
+	float newSensitivity = 0.0f;
+	float normalizedPreCurve = 0.0f;
 	if (denom <= 0.0f)
 	{
 		newSensitivity =
 		  magnitude > 0.0f ? 1.0f : 0.0f; // if min threshold overlaps max threshold, pop up to
 		                                  // max lowSens as soon as we're above min threshold
+		normalizedPreCurve = newSensitivity;
 	}
 	else
 	{
 		newSensitivity = magnitude / denom;
+		normalizedPreCurve = std::clamp((omega - minThreshold) / denom, 0.0f, 1.0f);
 	}
 	if (newSensitivity > 1.0f)
 		newSensitivity = 1.0f;
 
 	// interpolate between low sensitivity and high sensitivity
-	gyroXVelocity *= lowSensXY.first * (1.0f - newSensitivity) + hiSensXY.first * newSensitivity;
-	gyroYVelocity *= lowSensXY.second * (1.0f - newSensitivity) + hiSensXY.second * newSensitivity;
+	float appliedSensX = lowSensXY.first * (1.0f - newSensitivity) + hiSensXY.first * newSensitivity;
+	float appliedSensY = lowSensXY.second * (1.0f - newSensitivity) + hiSensXY.second * newSensitivity;
+	gyroXVelocity *= appliedSensX;
+	gyroYVelocity *= appliedSensY;
+
+	TelemetrySample telemetrySample;
+	telemetrySample.omega = omega;
+	telemetrySample.normalized = normalizedPreCurve;
+	telemetrySample.normalizedPostCurve = newSensitivity;
+	telemetrySample.sensX = appliedSensX;
+	telemetrySample.sensY = appliedSensY;
+	telemetrySample.minThreshold = minThreshold;
+	telemetrySample.maxThreshold = maxThreshold;
+	telemetrySample.sMinX = lowSensXY.first;
+	telemetrySample.sMaxX = hiSensXY.first;
+	telemetrySample.sMinY = lowSensXY.second;
+	telemetrySample.sMaxY = hiSensXY.second;
+	Telemetry::MaybeSend(telemetrySample);
 
 	jc->gyroXVelocity = gyroXVelocity;
 	jc->gyroYVelocity = gyroYVelocity;
@@ -1545,6 +1581,7 @@ void beforeShowTrayMenu()
 // Perform all cleanup tasks when JSM is exiting
 void cleanUp()
 {
+	Telemetry::Shutdown();
 	if (tray)
 	{
 		tray->Hide();
@@ -2566,6 +2603,30 @@ void initJsmSettings(CmdRegistry *commandRegistry)
 	SettingsManager::add(SettingID::RUMBLE, rumble_enable);
 	commandRegistry->add((new JSMAssignment<Switch>(magic_enum::enum_name(SettingID::RUMBLE).data(), *rumble_enable))
 	                       ->setHelp("Disable the rumbling feature from vigem. Valid values are ON and OFF."));
+
+	auto telemetry_enabled = new JSMSetting<Switch>(SettingID::TELEMETRY_ENABLED, Switch::OFF);
+	telemetry_enabled->setFilter(&filterInvalidValue<Switch, Switch::INVALID>);
+	SettingsManager::add(SettingID::TELEMETRY_ENABLED, telemetry_enabled);
+	telemetry_enabled->addOnChangeListener([](const Switch &)
+	                                       { RefreshTelemetrySettings(); }, true);
+	commandRegistry->add((new JSMAssignment<Switch>("TELEMETRY_ENABLED", *telemetry_enabled))
+	                       ->setHelp("Enable or disable the UDP telemetry stream used by the viewer. Valid values are ON and OFF."));
+
+	auto telemetry_port = new JSMSetting<int>(SettingID::TELEMETRY_PORT, Telemetry::kDefaultPort);
+	telemetry_port->setFilter([](int current, int next)
+	                          {
+		                          if (next < 1024 || next > 65535)
+		                          {
+			                          CERR << "TELEMETRY_PORT must be between 1024 and 65535.\n";
+			                          return current;
+		                          }
+		                          return next;
+	                          });
+	telemetry_port->addOnChangeListener([](int)
+	                                    { RefreshTelemetrySettings(); });
+	SettingsManager::add(SettingID::TELEMETRY_PORT, telemetry_port);
+	commandRegistry->add((new JSMAssignment<int>("TELEMETRY_PORT", *telemetry_port))
+	                       ->setHelp("Set the UDP port that telemetry packets are sent to (default 8974). Valid range: 1024-65535."));
 
 	auto adaptive_trigger = new JSMSetting<Switch>(SettingID::ADAPTIVE_TRIGGER, Switch::ON);
 	adaptive_trigger->setFilter(&filterInvalidValue<Switch, Switch::INVALID>);
