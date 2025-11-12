@@ -1,0 +1,1343 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>JoyShockMapper Gyro UI</title>
+<style>
+body {
+  font-family: sans-serif;
+  background-color: #121212;
+  color: #e0e0e0;
+  /* ... */
+}
+
+/* 👇 Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+  border: 2px solid #1e1e1e;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #888;
+}
+
+button:disabled {
+  background-color: #555 !important;
+  color: #aaa !important;
+  border: 1px solid #777 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+</style>
+<style>
+ body {
+  font-family: sans-serif;
+  background-color: #121212;
+  color: #e0e0e0;
+  padding: 2em;
+  max-width: 900px;
+  margin: auto;
+}
+
+label {
+  display: block;
+  margin-top: 1em;
+  color: #ddd;
+}
+
+input[type="text"], input[type="number"], select, textarea {
+  padding: 0.5em;
+  width: 100%;
+  margin-top: 0.3em;
+  box-sizing: border-box;
+  font-size: 1em;
+  background-color: #222;
+  border: 1px solid #444;
+  color: #eee;
+}
+
+input[type="text"]::placeholder, input[type="number"]::placeholder, textarea::placeholder {
+  color: #888;
+}
+
+.flex-inputs {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+
+.flex-inputs input, .flex-inputs select {
+  flex: 1;
+  background-color: #222;
+  border: 1px solid #444;
+  color: #eee;
+}
+
+button {
+  padding: 0.6em 1.2em;
+  background-color: #3a3a3a;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1em;
+  margin-top: 1.2em;
+  transition: background-color 0.2s ease;
+}
+
+button:hover { background-color: #5a5a5a; }
+
+textarea {
+  margin-top: 1.5em;
+  height: 180px;
+  font-family: monospace;
+  font-size: 14px;
+  resize: vertical;
+  background-color: #222;
+  border: 1px solid #444;
+  color: #eee;
+}
+
+small {
+  display: block;
+  margin-top: 0.5em;
+  color: #999;
+}
+
+.top-image {
+  display: block;
+  max-width: 300px;
+  height: auto;
+  margin: 0 auto 1.5em auto;
+  filter: brightness(0.9);
+}
+.telemetry-banner {
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1em;
+  margin: 1.5em 0;
+  background-color: #1b1b1b;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+.telemetry-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2em;
+  font-size: 0.95em;
+}
+.telemetry-readouts span strong {
+  font-weight: 600;
+}
+.telemetry-status {
+  font-weight: 600;
+}
+.telemetry-status.telemetry-connected {
+  color: #64d883;
+}
+.telemetry-status.telemetry-disconnected {
+  color: #ff786f;
+}
+.jsm-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: 0.9em;
+}
+.jsm-status-pill {
+  padding: 0.2em 0.8em;
+  border-radius: 999px;
+  border: 1px solid #444;
+  background: #1f1f1f;
+}
+.jsm-status-pill.running {
+  border-color: #64d883;
+  color: #64d883;
+}
+.calibration-pill {
+  color: #ffb680;
+  font-weight: 600;
+}
+#controlsSection {
+  position: relative;
+}
+.locked-overlay {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  display: none;
+  background: rgba(255, 120, 111, 0.12);
+  border: 1px solid rgba(255, 120, 111, 0.6);
+  color: #ffb7af;
+  padding: 0.5em 0.9em;
+  margin-bottom: 0.8em;
+  border-radius: 8px;
+  font-size: 0.9em;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(2px);
+}
+.lockable.locked .locked-overlay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.lockable.locked input,
+.lockable.locked select,
+.lockable.locked textarea,
+.lockable.locked button {
+  pointer-events: none;
+  opacity: 0.5;
+}
+.lockable.locked canvas {
+  pointer-events: auto;
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+<img alt="Logo image" class="top-image" src="logo_thankun.png"/>
+<h1>JoyShockMapper Gyro UI</h1>
+<div id="controlsSection" class="lockable">
+<div class="locked-overlay">🔒 Live telemetry active — controls locked</div>
+<label>JSM FORCE ADAPTIVE TRIGGER
+  <select id="adaptiveTrigger">
+<option value="">-- SELECT --</option>
+<option value="ON">ON</option>
+<option value="OFF">OFF</option>
+</select>
+</label>
+<label>AUTO CALIBRATION
+  <select id="autoCalibrateGyro">
+<option value="">-- SELECT --</option>
+<option value="ON">ON</option>
+<option value="OFF">OFF</option>
+</select>
+</label>
+<label>START-UPCALIBRATION
+  <select id="gyroCalibrationOption">
+<option value="">[Disabled]</option>
+<option value="5">[5sec Calib]</option>
+<option value="10">[10sec Calib]</option>
+
+</select>
+</label>
+<label>TICK TIME(POLLING RATE)
+  <select id="tickTime">
+<option value="">-- SELECT --</option>
+<option value="1">500hz</option>
+<option value="2">333hz</option>
+<option value="3">250hz</option>
+</select>
+</label>
+<h2>GYROMOUSE Sensitivity</h2>
+<label>Real World Calibration
+  <div class="flex-inputs">
+<select id="realWorldCalibrationSelect" onchange="document.getElementById('realWorldCalibration').value = this.value;">
+<option value="">-- Direct Input --</option>
+<option value="145.3398374244656">The FirstDecendant</option>
+<option value="151.5">OVERWATCH2</option>
+<option value="45.454">CS</option>
+<option value="45.454">HALO MCC</option>
+<option value="45.454">Apex Legends / Titanfall2</option>
+</select>
+<input id="realWorldCalibration" placeholder="ex) CS2 = 45.454" type="text"/>
+</div>
+</label>
+<label>In-game Mouse Sens
+  <input id="inGameSens" placeholder="Enter your in-game mouse sensitivity." type="text"/>
+</label>
+<small>※ The more accurate the above items match, the easier sensitivity management is. </small>
+<div id="accel-graph-container" style="margin-top:2em;">
+<label>Min Gyro Sens
+<div class="flex-inputs">
+<input id="gyroMinSensHNum" max="30" min="0" oninput="document.querySelector('select[onchange*=\&quot;gyroMinSensHNum\&quot;]').dispatchEvent(new Event('change'))" placeholder="Horizontal" step="0.0001" type="number"/>
+<select onchange="applyRatioTo('gyroMinSensHNum', 'gyroMinSensVNum', this.value)" style="margin-top:0.3em;">
+<option value="">Ratio</option>
+<option value="1.0">1:1</option>
+<option value="0.75">4:3</option>
+<option value="0.5625">16:9</option>
+<option value="0.5">2:1</option>
+</select>
+<input id="gyroMinSensHRange" max="30" min="0" step="0.0001" type="range"/>
+<input id="gyroMinSensVNum" max="30" min="0" placeholder="Vertical" step="0.0001" type="number"/>
+<input id="gyroMinSensVRange" max="30" min="0" step="0.0001" type="range"/>
+</div>
+</label>
+<label>Max Gyro Sens
+<div class="flex-inputs">
+<input id="gyroMaxSensHNum" max="30" min="0" oninput="document.querySelector('select[onchange*=\&quot;gyroMaxSensHNum\&quot;]').dispatchEvent(new Event('change'))" placeholder="Horizontal" step="0.0001" type="number"/>
+<select onchange="applyRatioTo('gyroMaxSensHNum', 'gyroMaxSensVNum', this.value)" style="margin-top:0.3em;">
+<option value="">Ratio</option>
+<option value="1.0">1:1</option>
+<option value="0.75">4:3</option>
+<option value="0.5625">16:9</option>
+<option value="0.5">2:1</option>
+</select>
+<input id="gyroMaxSensHRange" max="30" min="0" step="0.0001" type="range"/>
+<input id="gyroMaxSensVNum" max="30" min="0" placeholder="Vertical" step="0.0001" type="number"/>
+<input id="gyroMaxSensVRange" max="30" min="0" step="0.0001" type="range"/>
+</div>
+</label>
+<label>Min Sens Threshold
+<div class="flex-inputs">
+<input id="minGyroThresholdNum" max="500" min="0" placeholder="If you raise this part, the minimum sensitivity becomes longer." step="0.001" type="number"/>
+<input id="minGyroThresholdRange" max="500" min="0" step="0.001" type="range"/>
+</div>
+</label>
+<label>Max Sens Threshold
+<div class="flex-inputs">
+<input id="maxGyroThresholdNum" max="500" min="0" placeholder="Increasing this part will distance the reach of maximum sensitivity." type="number"/>
+<input id="maxGyroThresholdRange" max="500" min="0" step="0.1" type="range"/>
+</div>
+<br/>
+</label>
+<canvas height="500" id="accelGraph" width="800"></canvas>
+<div class="telemetry-banner">
+  <span id="telemetryStatus" class="telemetry-status telemetry-disconnected">Telemetry: Disconnected</span>
+  <div class="telemetry-readouts">
+    <span>ω: <strong id="telemetryOmega">—</strong>°/s</span>
+    <span>t: <strong id="telemetryT">—</strong></span>
+    <span>u: <strong id="telemetryU">—</strong></span>
+    <span>Sens X: <strong id="telemetrySensX">—</strong></span>
+    <span>Sens Y: <strong id="telemetrySensY">—</strong></span>
+  </div>
+  <div class="jsm-status-row">
+    <span id="jsmActiveStatus" class="jsm-status-pill">JSM Idle</span>
+    <span id="calibrationCountdown" class="calibration-pill"></span>
+  </div>
+</div>
+
+<br/>
+<button id="savePngBtn" title="Save the graph as a PNG image">Save as PNG</button>
+</div>
+<script>
+let jsmRunning = false;
+let calibrationEndTime = null;
+let calibrationTimerId = null;
+
+function setJsmStatus(state) {
+  jsmRunning = state === 'running';
+  const runBtn = document.getElementById('save-and-run');
+  if (runBtn) runBtn.disabled = jsmRunning;
+
+  const statusEl = document.getElementById('jsmActiveStatus');
+  if (statusEl) {
+    statusEl.textContent = jsmRunning ? 'JSM Running' : 'JSM Idle';
+    statusEl.classList.toggle('running', jsmRunning);
+  }
+}
+
+function startCalibrationCountdown(seconds) {
+  calibrationEndTime = seconds > 0 ? Date.now() + seconds * 1000 : null;
+  const countdownEl = document.getElementById('calibrationCountdown');
+  if (!countdownEl) return;
+
+  const tick = () => {
+    if (!calibrationEndTime) {
+      countdownEl.textContent = '';
+      return;
+    }
+    const remaining = Math.max(0, Math.ceil((calibrationEndTime - Date.now()) / 1000));
+    if (remaining > 0) {
+      countdownEl.textContent = `Calibrating... ${remaining}s`;
+      calibrationTimerId = requestAnimationFrame(tick);
+    } else {
+      countdownEl.textContent = '';
+      calibrationEndTime = null;
+    }
+  };
+  if (calibrationTimerId) cancelAnimationFrame(calibrationTimerId);
+  tick();
+}
+
+function launchJSM() {
+  const calibrationOption = document.getElementById('gyroCalibrationOption')?.value;
+  let delay = 3000;
+  if (calibrationOption === '5') delay = 6000;
+  else if (calibrationOption === '10') delay = 11000;
+
+  setJsmStatus('running');
+  startCalibrationCountdown(parseInt(calibrationOption || '0', 10));
+
+  window.electronAPI?.launchJSM(delay).catch(err => {
+    console.error('JSM Launch Failed:', err);
+    setJsmStatus('idle');
+  });
+}
+
+function closeJSM() {
+  if (!jsmRunning) return;
+  window.electronAPI?.terminateJSM()
+    .then(() => {
+      setJsmStatus('idle');
+      const countdownEl = document.getElementById('calibrationCountdown');
+      if (countdownEl) countdownEl.textContent = '';
+      calibrationEndTime = null;
+      if (calibrationTimerId) cancelAnimationFrame(calibrationTimerId);
+    })
+    .catch(err => console.error('Terminate Failed:', err));
+}
+
+function saveToStartup() {
+  const text = document.getElementById('output')?.value;
+  if (!text) {
+    console.warn('No commands to save.');
+    return;
+  }
+  return window.electronAPI?.saveStartupFile(text);
+}
+ 
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!window.electronAPI?.loadStartupFile) return;
+  const content = await window.electronAPI.loadStartupFile();
+  if (!content) return;
+
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    if (line.startsWith('#') || line.trim() === '') continue;
+    const [key, ...rest] = line.split('=');
+    if (!key || !rest.length) continue;
+
+    const value = rest.join('=').trim();
+    switch (key.trim()) {
+      case 'MIN_GYRO_SENS':
+        const [minH, minV] = value.split(/\s+/);
+        document.getElementById('gyroMinSensHNum').value = minH;
+        document.getElementById('gyroMinSensVNum').value = minV;
+        document.getElementById('gyroMinSensHRange').value = minH;
+        document.getElementById('gyroMinSensVRange').value = minV;
+        break;
+      case 'MAX_GYRO_SENS':
+        const [maxH, maxV] = value.split(/\s+/);
+        document.getElementById('gyroMaxSensHNum').value = maxH;
+        document.getElementById('gyroMaxSensVNum').value = maxV;
+        document.getElementById('gyroMaxSensHRange').value = maxH;
+        document.getElementById('gyroMaxSensVRange').value = maxV;
+        break;
+      case 'MIN_GYRO_THRESHOLD':
+        document.getElementById('minGyroThresholdNum').value = value;
+        document.getElementById('minGyroThresholdRange').value = value;
+        break;
+      case 'MAX_GYRO_THRESHOLD':
+        document.getElementById('maxGyroThresholdNum').value = value;
+        document.getElementById('maxGyroThresholdRange').value = value;
+        break;
+    }
+  }
+
+  // Redraw graph
+  if (typeof drawGraph === 'function') drawGraph();
+});
+
+let jsmRunning = false;
+let calibrationTimerId = null;
+let calibrationEndMs = null;
+
+function updateCalibrationCountdown() {
+  const countdownEl = document.getElementById('calibrationCountdown');
+  if (!countdownEl || !calibrationEndMs) return;
+  const remaining = Math.max(0, Math.ceil((calibrationEndMs - Date.now()) / 1000));
+  if (remaining > 0) {
+    countdownEl.textContent = `Calibrating... ${remaining}s`;
+    requestAnimationFrame(updateCalibrationCountdown);
+  } else {
+    countdownEl.textContent = '';
+    calibrationEndMs = null;
+  }
+}
+
+function setJsmStatus(state) {
+  const statusLabel = document.getElementById('jsmActiveStatus');
+  if (!statusLabel) return;
+  statusLabel.textContent = state === 'running' ? 'JSM Running' : 'JSM Idle';
+  statusLabel.classList.toggle('running', state === 'running');
+}
+
+function launchJSM() {
+  const runBtn = document.getElementById('save-and-run');
+  if (runBtn) runBtn.disabled = true;
+  jsmRunning = true;
+  setJsmStatus('running');
+
+  const calibrationOption = document.getElementById('gyroCalibrationOption')?.value;
+  let delay = 3000;
+  if (calibrationOption === "5") delay = 6000;
+  else if (calibrationOption === "10") delay = 11000;
+
+  const seconds = calibrationOption ? parseInt(calibrationOption, 10) : 0;
+  if (seconds > 0) {
+    calibrationEndMs = Date.now() + seconds * 1000;
+    updateCalibrationCountdown();
+  }
+
+  window.electronAPI?.launchJSM(delay)
+    .catch(err => {
+      console.error('JSM Launch Failed:', err);
+      if (runBtn) runBtn.disabled = false;
+      jsmRunning = false;
+      setJsmStatus('idle');
+    });
+}
+
+function closeJSM() {
+  window.electronAPI?.terminateJSM()
+    .then(() => {
+      const runBtn = document.getElementById('save-and-run');
+      if (runBtn) runBtn.disabled = false;
+      jsmRunning = false;
+      setJsmStatus('idle');
+      document.getElementById('calibrationCountdown').textContent = '';
+    })
+    .catch(err => console.error('Terminate Failed:', err));
+}
+
+function saveToStartup() {
+  const text = document.getElementById('output')?.value;
+  if (!text) {
+    console.warn('No commands to save.');
+    return;
+  }
+  return window.electronAPI?.saveStartupFile(text);
+}
+
+</script>
+<script>
+window.addEventListener('message', event => {
+  const msg = event.data;
+  if (!msg || msg.type !== 'jsm-gyro-values') return;
+  const v = msg.values;
+
+  function set(id, val) {
+    if (!isNaN(val)) {
+      const numEl = document.getElementById(id + 'Num');
+      const rangeEl = document.getElementById(id + 'Range');
+      if (numEl) numEl.value = val;
+      if (rangeEl) rangeEl.value = val;
+    }
+  }
+
+  set('gyroMinSensH', v.minH);
+  set('gyroMinSensV', v.minV);
+  set('gyroMaxSensH', v.maxH);
+  set('gyroMaxSensV', v.maxV);
+  set('minGyroThreshold', v.minThr);
+  set('maxGyroThreshold', v.maxThr);
+
+  if (typeof drawGraph === 'function') drawGraph();
+});
+</script>
+</div>
+<script>
+function applyRatioTo(horizontalId, verticalId, ratioValue) {
+  const h = parseFloat(document.getElementById(horizontalId).value);
+  const r = parseFloat(ratioValue);
+  if (!isNaN(h) && !isNaN(r)) {
+    const result = (h * r).toFixed(4);
+    const vInput = document.getElementById(verticalId);
+    if (vInput) vInput.value = result;
+    const vSlider = document.getElementById(verticalId + 'Range');
+    if (vSlider) vSlider.value = result;
+    if (typeof drawGraph === 'function') drawGraph();
+  }
+}
+</script>
+<script>
+  const pairs = [
+    { num: 'gyroMinSensHNum', range: 'gyroMinSensHRange' },
+    { num: 'gyroMinSensVNum', range: 'gyroMinSensVRange' },
+    { num: 'gyroMaxSensHNum', range: 'gyroMaxSensHRange' },
+    { num: 'gyroMaxSensVNum', range: 'gyroMaxSensVRange' },
+    { num: 'minGyroThresholdNum', range: 'minGyroThresholdRange' },
+    { num: 'maxGyroThresholdNum', range: 'maxGyroThresholdRange' },
+  ];
+
+  const canvas = document.getElementById('accelGraph');
+  const ctx = canvas.getContext('2d');
+  let hoverX = null;
+
+  const MAX_OMEGA = 500;
+  const TELEMETRY_TIMEOUT_MS = 2000;
+  let latestTelemetry = null;
+  let telemetryTimeoutId = null;
+  let liveSpeed = null;
+  let liveSensXValue = null;
+  let liveSensYValue = null;
+  let liveNormalized = null;
+  let livePostCurve = null;
+
+  const telemetryStatusEl = document.getElementById('telemetryStatus');
+  const telemetryOmegaEl = document.getElementById('telemetryOmega');
+  const telemetrySensXEl = document.getElementById('telemetrySensX');
+  const telemetrySensYEl = document.getElementById('telemetrySensY');
+  const telemetryTEl = document.getElementById('telemetryT');
+  const telemetryUEl = document.getElementById('telemetryU');
+  const controlsSection = document.getElementById('controlsSection');
+
+  function getValue(id) {
+    const el = document.getElementById(id);
+    return parseFloat(el.value);
+  }
+
+  function syncNumRange(numId, rangeId) {
+    const numEl = document.getElementById(numId);
+    const rangeEl = document.getElementById(rangeId);
+
+    numEl.addEventListener('input', () => {
+      let val = parseFloat(numEl.value);
+      if (isNaN(val)) return;
+      if (rangeEl.min) val = Math.max(val, parseFloat(rangeEl.min));
+      if (rangeEl.max) val = Math.min(val, parseFloat(rangeEl.max));
+      rangeEl.value = val;
+      drawGraph();
+    });
+
+    rangeEl.addEventListener('input', () => {
+      let val = parseFloat(rangeEl.value);
+      if (isNaN(val)) return;
+      if (numEl.min) val = Math.max(val, parseFloat(numEl.min));
+      if (numEl.max) val = Math.min(val, parseFloat(numEl.max));
+      numEl.value = val;
+      drawGraph();
+    });
+  }
+
+  pairs.forEach(pair => syncNumRange(pair.num, pair.range));
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    hoverX = e.clientX - rect.left;
+    drawGraph();
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    hoverX = null;
+    drawGraph();
+  });
+
+  function formatNumber(value, digits = 2) {
+    return Number.isFinite(value) ? value.toFixed(digits) : '—';
+  }
+
+  function readSliderValues() {
+    return {
+      minSensH: getValue('gyroMinSensHNum'),
+      minSensV: getValue('gyroMinSensVNum'),
+      maxSensH: getValue('gyroMaxSensHNum'),
+      maxSensV: getValue('gyroMaxSensVNum'),
+      minThr: getValue('minGyroThresholdNum'),
+      maxThr: getValue('maxGyroThresholdNum'),
+    };
+  }
+
+  function fromTelemetry(value, fallback) {
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  function updateTelemetryUI(sample) {
+    if (!telemetryStatusEl) return;
+    const isConnected = !!sample;
+    telemetryStatusEl.textContent = isConnected ? 'Telemetry: Live' : 'Telemetry: Disconnected';
+    telemetryStatusEl.classList.toggle('telemetry-connected', isConnected);
+    telemetryStatusEl.classList.toggle('telemetry-disconnected', !isConnected);
+
+    if (telemetryOmegaEl) telemetryOmegaEl.textContent = formatNumber(sample?.omega);
+    if (telemetrySensXEl) telemetrySensXEl.textContent = formatNumber(sample?.sensX, 3);
+    if (telemetrySensYEl) telemetrySensYEl.textContent = formatNumber(sample?.sensY, 3);
+    if (telemetryTEl) telemetryTEl.textContent = formatNumber(sample?.t, 3);
+    if (telemetryUEl) telemetryUEl.textContent = formatNumber(sample?.u, 3);
+    if (controlsSection) {
+      controlsSection.classList.toggle('locked', isConnected);
+    }
+  }
+
+  function handleTelemetrySample(sample) {
+    latestTelemetry = sample || null;
+    liveSpeed = fromTelemetry(sample?.omega, null);
+    liveSensXValue = fromTelemetry(sample?.sensX, null);
+    liveSensYValue = fromTelemetry(sample?.sensY, null);
+    liveNormalized = fromTelemetry(sample?.t, null);
+    livePostCurve = fromTelemetry(sample?.u, null);
+    updateTelemetryUI(sample);
+    if (telemetryTimeoutId) clearTimeout(telemetryTimeoutId);
+    telemetryTimeoutId = setTimeout(() => {
+      latestTelemetry = null;
+      liveSpeed = null;
+      liveSensXValue = null;
+      liveSensYValue = null;
+      liveNormalized = null;
+      livePostCurve = null;
+      updateTelemetryUI(null);
+      drawGraph();
+    }, TELEMETRY_TIMEOUT_MS);
+    drawGraph();
+  }
+
+  function attachTelemetryListener(attempt = 0) {
+    if (window.telemetry?.onSample) {
+      window.telemetry.onSample(handleTelemetrySample);
+      return;
+    }
+    if (attempt < 20) {
+      setTimeout(() => attachTelemetryListener(attempt + 1), 250);
+    } else {
+      updateTelemetryUI(null);
+    }
+  }
+  attachTelemetryListener();
+
+  function drawGraph() {
+    const graphValues = readSliderValues();
+    const minSensH = graphValues.minSensH;
+    const minSensV = graphValues.minSensV;
+    const maxSensH = graphValues.maxSensH;
+    const maxSensV = graphValues.maxSensV;
+    const minThr = graphValues.minThr;
+    const maxThr = graphValues.maxThr;
+    const maxX = MAX_OMEGA;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#444';
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+    const paddingLeft = 40;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 50;
+    const graphWidth = canvas.width - paddingLeft - paddingRight;
+    const graphHeight = canvas.height - paddingTop - paddingBottom;
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ddd';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Gyro Sensitivity (RWS)', paddingLeft - 10, paddingTop - 5);
+    ctx.fillText('Gyro speed (°/sec)', paddingLeft + graphWidth / 2, canvas.height - 15);
+
+    const maxSensY = Math.max(minSensH, minSensV, maxSensH, maxSensV, 2);
+
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#bbb';
+    for (let i = 0; i <= 5; i++) {
+      const y = paddingTop + graphHeight - (graphHeight / 5) * i;
+      const val = (maxSensY / 5) * i;
+      ctx.fillText(val.toFixed(2), paddingLeft - 10, y + 5);
+      ctx.strokeStyle = '#444';
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft - 5, y);
+      ctx.lineTo(canvas.width - paddingRight, y);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i <= 10; i++) {
+      const x = paddingLeft + (graphWidth * (i / 10));
+      const val = (maxX / 10) * i;
+      ctx.fillText(val.toFixed(0), x, canvas.height - paddingBottom + 20);
+      ctx.strokeStyle = '#444';
+      ctx.beginPath();
+      ctx.moveTo(x, canvas.height - paddingBottom + 5);
+      ctx.lineTo(x, paddingTop);
+      ctx.stroke();
+    }
+
+    if ([minSensH, minSensV, maxSensH, maxSensV, minThr, maxThr].every(v => typeof v === 'number' && !isNaN(v)) && minThr < maxThr && maxThr <= maxX) {
+      function xPos(speed) {
+        return paddingLeft + (graphWidth * (speed / maxX));
+      }
+      function yPos(sens) {
+        return paddingTop + graphHeight - (graphHeight * (sens / maxSensY));
+      }
+      function getSens(speed, minSens, maxSens) {
+        if (speed < minThr) return minSens;
+        if (speed > maxThr) return maxSens;
+        return minSens + (maxSens - minSens) * ((speed - minThr) / (maxThr - minThr));
+      }
+
+      ctx.strokeStyle = '#4a90e2';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(xPos(0), yPos(minSensH));
+      ctx.lineTo(xPos(minThr), yPos(minSensH));
+      ctx.lineTo(xPos(maxThr), yPos(maxSensH));
+      ctx.lineTo(xPos(maxX), yPos(maxSensH));
+      ctx.stroke();
+
+      ctx.strokeStyle = '#d62728';
+      ctx.beginPath();
+      ctx.moveTo(xPos(0), yPos(minSensV));
+      ctx.lineTo(xPos(minThr), yPos(minSensV));
+      ctx.lineTo(xPos(maxThr), yPos(maxSensV));
+      ctx.lineTo(xPos(maxX), yPos(maxSensV));
+      ctx.stroke();
+
+      if (hoverX !== null && hoverX >= paddingLeft && hoverX <= paddingLeft + graphWidth) {
+        const hoverSpeed = maxX * (hoverX - paddingLeft) / graphWidth;
+        const sensH = getSens(hoverSpeed, minSensH, maxSensH);
+        const sensV = getSens(hoverSpeed, minSensV, maxSensV);
+
+        ctx.strokeStyle = '#ddd';
+        ctx.beginPath();
+        ctx.moveTo(hoverX, paddingTop);
+        ctx.lineTo(hoverX, canvas.height - paddingBottom);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ddd';
+        ctx.textAlign = 'left';
+        ctx.font = '12px monospace';
+        const baseX = paddingLeft + 10;
+        const baseY = paddingTop + 15;
+        ctx.fillText(`Speed: ${hoverSpeed.toFixed(1)}°/s`, baseX, baseY);
+        ctx.fillText(`H: ${sensH.toFixed(3)}  V: ${sensV.toFixed(3)}`, baseX, baseY + 18);
+      }
+
+      if (liveSpeed !== null) {
+        const displaySpeed = Math.min(liveSpeed, maxX);
+        const sensH = Number.isFinite(liveSensXValue) ? liveSensXValue : getSens(displaySpeed, minSensH, maxSensH);
+        const sensV = Number.isFinite(liveSensYValue) ? liveSensYValue : getSens(displaySpeed, minSensV, maxSensV);
+
+        const dotX = xPos(displaySpeed);
+        const dotYH = yPos(sensH);
+        const dotYV = yPos(sensV);
+
+        ctx.beginPath();
+        ctx.arc(dotX, dotYH, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#4a90e2';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(dotX, dotYV, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#d62728';
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`LIVE → ω: ${displaySpeed.toFixed(1)}°/s`, canvas.width - 15, canvas.height - 65);
+        ctx.fillText(`Sens X: ${sensH.toFixed(3)}  Y: ${sensV.toFixed(3)}`, canvas.width - 15, canvas.height - 50);
+      }
+
+      ctx.fillStyle = '#4a90e2';
+      ctx.fillRect(canvas.width - 130, paddingTop + 10, 15, 10);
+      ctx.fillStyle = '#ddd';
+      ctx.fillText('Horizontal (H)', canvas.width - 110, paddingTop + 20);
+
+      ctx.fillStyle = '#d62728';
+      ctx.fillRect(canvas.width - 130, paddingTop + 35, 15, 10);
+      ctx.fillStyle = '#ddd';
+      ctx.fillText('Vertical (V)', canvas.width - 110, paddingTop + 45);
+    }
+  }
+
+  pairs.forEach(pair => {
+    const numEl = document.getElementById(pair.num);
+    const rangeEl = document.getElementById(pair.range);
+    let val = parseFloat(numEl.value);
+    if (isNaN(val)) val = parseFloat(rangeEl.min) || 0;
+    numEl.value = val;
+    rangeEl.value = val;
+  });
+
+  drawGraph();
+
+  const saveBtn = document.getElementById('savePngBtn');
+  saveBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'jsm_acceleration_graph.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+</script>
+
+<script>
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!window.electronAPI?.loadStartupFile) return;
+  const content = await window.electronAPI.loadStartupFile();
+  if (!content) return;
+
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    if (line.startsWith('#') || line.trim() === '') continue;
+    const [key, ...rest] = line.split('=');
+    if (!key || !rest.length) continue;
+
+    const value = rest.join('=').trim();
+    switch (key.trim()) {
+      case 'MIN_GYRO_SENS':
+        const [minH, minV] = value.split(/\s+/);
+        document.getElementById('gyroMinSensHNum').value = minH;
+        document.getElementById('gyroMinSensVNum').value = minV;
+        document.getElementById('gyroMinSensHRange').value = minH;
+        document.getElementById('gyroMinSensVRange').value = minV;
+        break;
+      case 'MAX_GYRO_SENS':
+        const [maxH, maxV] = value.split(/\s+/);
+        document.getElementById('gyroMaxSensHNum').value = maxH;
+        document.getElementById('gyroMaxSensVNum').value = maxV;
+        document.getElementById('gyroMaxSensHRange').value = maxH;
+        document.getElementById('gyroMaxSensVRange').value = maxV;
+        break;
+      case 'MIN_GYRO_THRESHOLD':
+        document.getElementById('minGyroThresholdNum').value = value;
+        document.getElementById('minGyroThresholdRange').value = value;
+        break;
+      case 'MAX_GYRO_THRESHOLD':
+        document.getElementById('maxGyroThresholdNum').value = value;
+        document.getElementById('maxGyroThresholdRange').value = value;
+        break;
+    }
+  }
+
+  // Redraw graph
+  if (typeof drawGraph === 'function') drawGraph();
+});
+</script>
+<script>
+window.addEventListener('message', event => {
+  const msg = event.data;
+  if (!msg || msg.type !== 'jsm-gyro-values') return;
+  const v = msg.values;
+
+  function set(id, val) {
+    if (!isNaN(val)) {
+      const numEl = document.getElementById(id + 'Num');
+      const rangeEl = document.getElementById(id + 'Range');
+      if (numEl) numEl.value = val;
+      if (rangeEl) rangeEl.value = val;
+    }
+  }
+
+  set('gyroMinSensH', v.minH);
+  set('gyroMinSensV', v.minV);
+  set('gyroMaxSensH', v.maxH);
+  set('gyroMaxSensV', v.maxV);
+  set('minGyroThreshold', v.minThr);
+  set('maxGyroThreshold', v.maxThr);
+
+  if (typeof drawGraph === 'function') drawGraph();
+});
+</script>
+<label>GYRO SPACE
+  <select id="gyroSpace">
+<option value="">-- SELECT --</option>
+<option value="LOCAL">LOCAL</option>
+<option value="PLAYER_TURN">PLAYER_TURN</option>
+<option value="WORLD_TURN">WORLD_TURN</option>
+</select>
+</label>
+<label>Gyro-On Button
+  <select id="gyroOnButton">
+<option value="">-- Always on --</option>
+<option value="N">Y or △</option>
+<option value="W">X or ☐</option>
+<option value="S">A or ✕</option>
+<option value="E">B or ◎</option>
+<option value="ZL">L Trigger</option>
+<option value="ZR">R Trigger</option>
+<option value="L">L Bumper</option>
+<option value="R">R Bumper</option>
+<option value="L3">L3</option>
+<option value="R3">R3</option>
+<option value="UP">D-UP</option>
+<option value="DOWN">D-DOWN</option>
+<option value="LEFT">D-LEFT</option>
+<option value="RIGHT">D-RIGHT</option>
+<option value="TOUCH">TOUCH</option>
+</select>
+</label>
+<label>Gyro-Off Button
+  <select id="gyroOffButton">
+<option value="">-- NONE --</option>
+<option value="N">Y or △</option>
+<option value="W">X or ☐</option>
+<option value="S">A or ✕</option>
+<option value="E">B or ◎</option>
+<option value="ZL">L Trigger</option>
+<option value="ZR">R Trigger</option>
+<option value="L">L Bumper</option>
+<option value="R">R Bumper</option>
+<option value="L3">L3</option>
+<option value="R3">R3</option>
+<option value="UP">D-UP</option>
+<option value="DOWN">D-DOWN</option>
+<option value="LEFT">D-LEFT</option>
+<option value="RIGHT">D-RIGHT</option>
+<option value="TOUCH">TOUCH</option>
+<option value="RRING">R Stick Enabled</option>
+</select>
+</label>
+<label>GYRO SMOOTH TIME(sec)
+  <div class="flex-inputs">
+<input id="gyroSmoothTime_slider" max="2" min="0" oninput="document.getElementById('gyroSmoothTime').value = this.value" step="0.0001" type="range"/>
+<input id="gyroSmoothTime" oninput="document.getElementById('gyroSmoothTime_slider').value = this.value" placeholder="ex) 0.005" type="text"/>
+</div>
+</label>
+<label>GYRO SMOOTH THRESHOLD(RWS)
+  <input id="gyroSmoothThreshold" placeholder="We recommend values such as maximum sensitivity." type="text"/>
+</label>
+<label>GYRO CUTOFF SPEED(Degree/sec)
+  <div class="flex-inputs">
+<input id="gyroCutoffSpeed_slider" max="2" min="0" oninput="document.getElementById('gyroCutoffSpeed').value = this.value" step="0.0001" type="range"/>
+<input id="gyroCutoffSpeed" oninput="document.getElementById('gyroCutoffSpeed_slider').value = this.value" placeholder="ex) 0.36" type="text"/>
+</div>
+</label>
+<label>GYRO CUTOFF SPEED RECOVERY(Degree/sec)
+  <div class="flex-inputs">
+<input id="gyroCutoffRecovery_slider" max="2" min="0" oninput="document.getElementById('gyroCutoffRecovery').value = this.value" step="0.0001" type="range"/>
+<input id="gyroCutoffRecovery" oninput="document.getElementById('gyroCutoffRecovery_slider').value = this.value" placeholder="ex) 0.36" type="text"/>
+</div>
+</label>
+<!-- Gyro direction selector -->
+<label>GYRO AXIS X
+  <select id="gyroAxisX">
+    <option value="">Default</option>
+    <option value="GYRO_AXIS_X = INVERTED">Inverted</option>
+  </select>
+</label>
+
+<label>GYRO AXIS Y
+  <select id="gyroAxisY">
+    <option value="">Default</option>
+    <option value="GYRO_AXIS_Y = INVERTED">Inverted</option>
+  </select>
+</label>
+<small>※ The above setting can only be used if the gyro signal is operated in reverse</small>
+<!-- Keymap profile dropdown -->
+<label>TOUCHPAD MODE
+  <select id="touchpadMode" onchange="generateConfig()">
+    <option value="">None</option>
+    <option value="PSMODE"   > Sony Touchpad Mode (※Only available for virtual dual shock 4)</option>
+    <option value="GRIDMODE"   > Grid mapping mode ( ※Map in touch mapping generator)</option>
+  </select>
+</label>
+<label>KEY Profile
+  <select id="keymapSelect">
+    <option value="">NONE</option>
+    <option value="keymap_01.txt">Profile1</option>
+    <option value="keymap_02.txt">Profile2</option>
+    <option value="keymap_03.txt">Profile3</option>
+  </select>
+</label>
+
+<textarea id="output" placeholder="You will see the settings created here. Copy and use them." readonly=""></textarea><div style="display:flex; flex-wrap:wrap; gap:1em; margin-top:1.5em;"><button onclick="window.electronAPI.openKeymapUI()">Key Mapper</button>
+  <button onclick="window.electronAPI.openTouchpadUI()">Touch Mapper</button><button id="save-and-run">Save settings/run JSM</button><button id="terminate-jsm">JSM Shut down</button></div><div id="manualCustomBox" style="margin-top:0em;">
+</div>
+
+
+
+
+
+<script>
+window.electronAPI?.onRestoreInput(() => {
+  setTimeout(() => {
+    const inputs = Array.from(document.querySelectorAll('input:not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled]), select:not([disabled])'));
+    const target = inputs.find(el => el.offsetParent !== null);
+    if (target) {
+      target.blur();
+      target.focus();
+      target.select();
+    }
+  }, 100);
+});
+</script>
+
+<script>
+function sendValuesToAccelGraph() {
+  const frame = document.getElementById('accelFrame');
+  if (!frame || !frame.contentWindow) return;
+
+  const data = {
+    type: 'jsm-gyro-values',
+    values: {
+      minH: parseFloat((document.getElementById('gyroMinSensHNum') || document.getElementById('gyroMinSensHRange'))?.value),
+      minV: parseFloat((document.getElementById('gyroMinSensVNum') || document.getElementById('gyroMinSensVRange'))?.value),
+      maxH: parseFloat((document.getElementById('gyroMaxSensHNum') || document.getElementById('gyroMaxSensHRange'))?.value),
+      maxV: parseFloat((document.getElementById('gyroMaxSensVNum') || document.getElementById('gyroMaxSensVRange'))?.value),
+      minThr: parseFloat((document.getElementById('minGyroThresholdNum') || document.getElementById('minGyroThresholdRange'))?.value),
+      maxThr: parseFloat((document.getElementById('maxGyroThresholdNum') || document.getElementById('maxGyroThresholdRange'))?.value),
+    }
+  };
+
+  frame.contentWindow.postMessage(data, '*');
+}
+
+['gyroMinSensH','gyroMinSensV','gyroMaxSensH','gyroMaxSensV','minGyroThreshold','maxGyroThreshold'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', sendValuesToAccelGraph);
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(sendValuesToAccelGraph, 500);
+});
+</script>
+<!-- Message box -->
+<script>
+function getVal(id) {
+  return document.getElementById(id)?.value.trim();
+}
+
+function generateConfig() {
+  const adaptiveTrigger = getVal('adaptiveTrigger');
+  const autoCalibrate = getVal('autoCalibrateGyro');
+  const tickTime = getVal('tickTime');
+  const realWorld = getVal('realWorldCalibration');
+  const inGame = getVal('inGameSens');
+  const gyroSpace = getVal('gyroSpace');
+  const gyroMinH = getVal('gyroMinSensHNum');
+  const gyroMinV = getVal('gyroMinSensVNum');
+  const gyroMaxH = getVal('gyroMaxSensHNum');
+  const gyroMaxV = getVal('gyroMaxSensVNum');
+  const minGyroThreshold = getVal('minGyroThresholdNum');
+  const maxGyroThreshold = getVal('maxGyroThresholdNum');
+  const gyroOn = getVal('gyroOnButton');
+  const gyroOff = getVal('gyroOffButton');
+  const smoothTime = getVal('gyroSmoothTime');
+  const smoothThreshold = getVal('gyroSmoothThreshold');
+  const cutoffSpeed = getVal('gyroCutoffSpeed');
+  const cutoffRecovery = getVal('gyroCutoffRecovery');
+
+  let lines = [
+    'HOME = CALIBRATE',
+    'CAPTURE = NONE',
+    'COUNTER_OS_MOUSE_SPEED',
+    'TELEMETRY_ENABLED = ON',
+    'TELEMETRY_PORT = 8974'
+  ];
+  if(adaptiveTrigger) lines.push(`ADAPTIVE_TRIGGER = ${adaptiveTrigger}`);
+  if(autoCalibrate) lines.push(`AUTO_CALIBRATE_GYRO = ${autoCalibrate}`);
+  if(tickTime) lines.push(`TICK_TIME = ${tickTime}`);
+  if(realWorld) lines.push(`REAL_WORLD_CALIBRATION = ${realWorld}`);
+  if(inGame) lines.push(`IN_GAME_SENS = ${inGame}`);
+  if(gyroMinH && gyroMinV) lines.push(`MIN_GYRO_SENS = ${gyroMinH} ${gyroMinV}`);
+  if(gyroMaxH && gyroMaxV) lines.push(`MAX_GYRO_SENS = ${gyroMaxH} ${gyroMaxV}`);
+  if(minGyroThreshold) lines.push(`MIN_GYRO_THRESHOLD = ${minGyroThreshold}`);
+  if(maxGyroThreshold) lines.push(`MAX_GYRO_THRESHOLD = ${maxGyroThreshold}`);
+  if(gyroSpace) lines.push(`GYRO_SPACE = ${gyroSpace}`);
+  if(gyroOn) lines.push(`GYRO_ON = ${gyroOn}`);
+  if(gyroOff) lines.push(`GYRO_OFF = ${gyroOff}`);
+  if(smoothTime) lines.push(`GYRO_SMOOTH_TIME = ${smoothTime}`);
+  if(smoothThreshold) lines.push(`GYRO_SMOOTH_THRESHOLD = ${smoothThreshold}`);
+  if(cutoffSpeed) lines.push(`GYRO_CUTOFF_SPEED = ${cutoffSpeed}`);
+  if(cutoffRecovery) lines.push(`GYRO_CUTOFF_RECOVERY = ${cutoffRecovery}`);
+const touchpadMode = getVal('touchpadMode');
+if (touchpadMode === 'PSMODE') {
+  lines.push('TOUCHPAD_MODE = PS_TOUCHPAD');
+} else if (touchpadMode === 'GRIDMODE') {
+  lines.push('TOUCHPAD_MODE = GRID_AND_STICK');
+  lines.push('touch.txt');
+}
+
+
+  const calibrationOption = getVal('gyroCalibrationOption');
+  if (calibrationOption === "5") {
+    lines.push('SLEEP 1');
+    lines.push('RESTART_GYRO_CALIBRATION');
+    lines.push('SLEEP 5');
+    lines.push('FINISH_GYRO_CALIBRATION');
+  } else if (calibrationOption === "10") {
+    lines.push('SLEEP 1');
+    lines.push('RESTART_GYRO_CALIBRATION');
+    lines.push('SLEEP 10');
+    lines.push('FINISH_GYRO_CALIBRATION');
+  } else if (calibrationOption === "20") {
+    lines.push('SLEEP 0.1');
+    lines.push('RESTART_GYRO_CALIBRATION');
+    lines.push('SLEEP 20');
+    lines.push('FINISH_GYRO_CALIBRATION');
+  }
+
+  
+  const gyroAxisX = getVal('gyroAxisX');
+  const gyroAxisY = getVal('gyroAxisY');
+  const keymap = getVal('keymapSelect');
+  if (gyroAxisX) lines.push(gyroAxisX);
+  if (gyroAxisY) lines.push(gyroAxisY);
+  if (keymap) lines.push(keymap);
+
+  document.getElementById('output').value = lines.join('\n');
+}
+
+async function loadStartupToUI() {
+  const content = await window.electronAPI?.loadStartupFile?.();
+  if (!content) return;
+
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    if (line.startsWith('#') || line.trim() === '') continue;
+    const [key, ...rest] = line.split('=');
+    const value = rest.join('=').trim();
+    switch (key.trim()) {
+      case 'ADAPTIVE_TRIGGER':
+        document.getElementById('adaptiveTrigger').value = value;
+        break;
+      case 'AUTO_CALIBRATE_GYRO':
+        document.getElementById('autoCalibrateGyro').value = value;
+        break;
+      case 'TICK_TIME':
+        document.getElementById('tickTime').value = value;
+        break;
+      case 'REAL_WORLD_CALIBRATION':
+        document.getElementById('realWorldCalibration').value = value;
+        break;
+      case 'IN_GAME_SENS':
+        document.getElementById('inGameSens').value = value;
+        break;
+      case 'MIN_GYRO_SENS':
+        const [minH, minV] = value.split(/\s+/);
+        document.getElementById('gyroMinSensHNum').value = minH;
+        document.getElementById('gyroMinSensVNum').value = minV;
+        document.getElementById('gyroMinSensHRange').value = minH;
+        document.getElementById('gyroMinSensVRange').value = minV;
+        break;
+      case 'MAX_GYRO_SENS':
+        const [maxH, maxV] = value.split(/\s+/);
+        document.getElementById('gyroMaxSensHNum').value = maxH;
+        document.getElementById('gyroMaxSensVNum').value = maxV;
+        document.getElementById('gyroMaxSensHRange').value = maxH;
+        document.getElementById('gyroMaxSensVRange').value = maxV;
+        break;
+      case 'MIN_GYRO_THRESHOLD':
+        document.getElementById('minGyroThresholdNum').value = value;
+        document.getElementById('minGyroThresholdRange').value = value;
+        break;
+      case 'MAX_GYRO_THRESHOLD':
+        document.getElementById('maxGyroThresholdNum').value = value;
+        document.getElementById('maxGyroThresholdRange').value = value;
+        break;
+      case 'GYRO_SPACE':
+        document.getElementById('gyroSpace').value = value;
+        break;
+      case 'GYRO_ON':
+        document.getElementById('gyroOnButton').value = value;
+        break;
+      case 'GYRO_OFF':
+        document.getElementById('gyroOffButton').value = value;
+        break;
+      case 'GYRO_SMOOTH_TIME':
+        document.getElementById('gyroSmoothTime').value = value;
+        document.getElementById('gyroSmoothTime_slider').value = value;
+        break;
+      case 'GYRO_SMOOTH_THRESHOLD':
+        document.getElementById('gyroSmoothThreshold').value = value;
+        break;
+      case 'GYRO_CUTOFF_SPEED':
+        document.getElementById('gyroCutoffSpeed').value = value;
+        document.getElementById('gyroCutoffSpeed_slider').value = value;
+        break;
+case 'TOUCHPAD_MODE':
+        if (value === 'PS_TOUCHPAD') document.getElementById('touchpadMode').value = 'PSMODE';
+        else if (value === 'GRID_AND_STICK') document.getElementById('touchpadMode').value = 'GRIDMODE';
+        break;
+      case 'GYRO_CUTOFF_RECOVERY':
+        document.getElementById('gyroCutoffRecovery').value = value;
+        document.getElementById('gyroCutoffRecovery_slider').value = value;
+        break;
+    }
+  }
+
+  // Restore calibration option
+  if (content.includes("RESTART_GYRO_CALIBRATION") && content.includes("FINISH_GYRO_CALIBRATION")) {
+    if (content.includes("SLEEP 5")) {
+      document.getElementById("gyroCalibrationOption").value = "5";
+    } else if (content.includes("SLEEP 10")) {
+      document.getElementById("gyroCalibrationOption").value = "10";
+    } else if (content.includes("SLEEP 20")) {
+      document.getElementById("gyroCalibrationOption").value = "20";
+    }
+  }
+// ——————— Restore keymap profile ———————
+const km = document.getElementById("keymapSelect");
+if (content.includes("keymap_01.txt"))      km.value = "keymap_01.txt";
+else if (content.includes("keymap_02.txt")) km.value = "keymap_02.txt";
+else if (content.includes("keymap_03.txt")) km.value = "keymap_03.txt";
+// ——————————————————————————————
+  generateConfig(); // Auto-generate configuration
+}
+</script>
+<div id="banner-container">
+<a href="https://github.com/Electronicks/JoyShockMapper" target="_blank">
+<img alt="Banner 5" class="banner" src="banner5.png"/>
+</a>
+<a href="http://gyrowiki.jibbsmart.com" target="_blank">
+<img alt="Banner 1" class="banner" src="banner1.png"/>
+</a>
+<a href="https://discord.gg/rv3qWjsyeM" target="_blank">
+<img alt="Banner 2" class="banner" src="banner2.png"/>
+</a>
+<a href="https://discord.gg/dztNfDm54U" target="_blank">
+<img alt="Banner 3" class="banner" src="banner3.png"/>
+</a>
+<a href="https://www.3daimtrainer.com/" target="_blank">
+<img alt="Banner 4" class="banner" src="banner4.png"/>
+</a>
+</div>
+<style>
+#banner-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
+.banner {
+  width: 150px;
+  height: 50px;
+  object-fit: cover;
+  border: 1px solid #444;
+}
+</style>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    loadStartupToUI();  // ← Auto-load OnStartUp.txt
+  });
+</script>
+<script>
+  window.electronAPI?.onRestoreInput?.(() => {
+    console.log('[⚡ Input focus restore message received]');
+    loadStartupToUI();  // → Auto-restore configuration after JSM exits
+  });
+</script>
+<script>
+document.getElementById('openKeymap')?.addEventListener('click', () => {
+  window.electronAPI.openKeymapUI('keymap-ui.html', 'KeymapWindow', 'width=900,height=1000');
+});
+</script>
+<script>
+  console.log('✅ index.html loaded');
+  console.log('electronAPI:', window.electronAPI);
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const runBtn = document.getElementById('save-and-run');
+  runBtn?.addEventListener('click', async () => {
+    if (jsmRunning) return;
+    generateConfig();
+    try {
+      await saveToStartup();
+      launchJSM();
+    } catch (err) {
+      console.error('Save Failed:', err);
+    }
+  });
+
+  document.getElementById('terminate-jsm')?.addEventListener('click', () => {
+    closeJSM();
+  });
+});
+</script>
+</body>
+</html>
