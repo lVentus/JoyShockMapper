@@ -169,6 +169,19 @@ input[type=number] {
   margin-top: 0.75rem;
 }
 
+.secondary-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #f7f7f7;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .pending-banner {
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
