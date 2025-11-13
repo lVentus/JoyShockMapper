@@ -26,10 +26,13 @@ interface Window {
   electronAPI: {
     launchJSM: (calibrationSeconds?: number) => Promise<void>
     terminateJSM: () => Promise<void>
-    saveKeymapFile: (text: string) => Promise<void>
-    loadKeymapFile: () => Promise<string>
     minimizeTemporarily: () => Promise<void>
-    applyKeymap: (text: string) => Promise<{ restarted: boolean }>
+    getProfiles: () => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
+    loadProfile: (profileId?: number) => Promise<string>
+    applyProfile: (profileId: number, text: string) => Promise<{ restarted: boolean }>
+    setActiveProfile: (profileId: number) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
+    renameProfile: (profileId: number, name: string) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
+    copyProfile: (sourceId: number, targetId: number) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
     onCalibrationStatus: (callback: (payload: { calibrating: boolean; seconds?: number }) => void) => () => void
   }
   telemetry: {

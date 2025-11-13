@@ -3,11 +3,14 @@ import { ipcRenderer, contextBridge } from 'electron'
 const electronAPI = {
   launchJSM: (calibrationSeconds = 5) => ipcRenderer.invoke('launch-jsm', calibrationSeconds),
   terminateJSM: () => ipcRenderer.invoke('terminate-jsm'),
-  saveKeymapFile: (text: string) => ipcRenderer.invoke('save-keymap', text),
-  loadKeymapFile: () => ipcRenderer.invoke('load-keymap'),
   minimizeTemporarily: () => ipcRenderer.invoke('minimize-temporarily'),
-  applyKeymap: (text: string) => ipcRenderer.invoke('apply-keymap', text),
   recalibrateGyro: () => ipcRenderer.invoke('recalibrate-gyro'),
+  getProfiles: () => ipcRenderer.invoke('get-profiles'),
+  loadProfile: (profileId?: number) => ipcRenderer.invoke('load-profile', profileId),
+  applyProfile: (profileId: number, text: string) => ipcRenderer.invoke('apply-profile', profileId, text),
+  setActiveProfile: (profileId: number) => ipcRenderer.invoke('set-active-profile', profileId),
+  renameProfile: (profileId: number, name: string) => ipcRenderer.invoke('rename-profile', profileId, name),
+  copyProfile: (sourceId: number, targetId: number) => ipcRenderer.invoke('copy-profile', sourceId, targetId),
 }
 
 const telemetryListeners = new Set<(payload: unknown) => void>()

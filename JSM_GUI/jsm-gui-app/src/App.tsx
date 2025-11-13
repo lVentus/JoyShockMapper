@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTelemetry } from './hooks/useTelemetry'
 import { parseSensitivityValues, updateKeymapEntry, removeKeymapEntry } from './utils/keymap'
 import { SensitivityControls } from './components/SensitivityControls'
@@ -7,6 +7,7 @@ import { CurvePreview } from './components/CurvePreview'
 import { TelemetryBanner } from './components/TelemetryBanner'
 import { ConfigEditor } from './components/ConfigEditor'
 import { CalibrationCard } from './components/CalibrationCard'
+import { ProfileManager } from './components/ProfileManager'
 
 const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 const formatNumber = (value: number | undefined, digits = 2) =>
@@ -14,27 +15,66 @@ const formatNumber = (value: number | undefined, digits = 2) =>
 const displayValue = (value: unknown) =>
   typeof value === 'number' || typeof value === 'string' ? value : '—'
 
+type ProfileInfo = { id: number; name: string }
+
 function App() {
   const { sample, isCalibrating, countdown } = useTelemetry()
   const [configText, setConfigText] = useState('')
   const [appliedConfig, setAppliedConfig] = useState('')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [recalibrating, setRecalibrating] = useState(false)
+  const [profiles, setProfiles] = useState<ProfileInfo[]>([])
+  const [activeProfileId, setActiveProfileId] = useState<number | null>(null)
+  const [lastAppliedProfileId, setLastAppliedProfileId] = useState<number | null>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [profileCopyStatus, setProfileCopyStatus] = useState<string | null>(null)
   const sensitivity = useMemo(() => parseSensitivityValues(configText), [configText])
 
-  useEffect(() => {
-    window.electronAPI?.loadKeymapFile?.().then(text => {
+  const loadProfileContent = useCallback(async (profileId: number) => {
+    if (!profileId) return
+    setIsLoadingProfile(true)
+    try {
+      const text = await window.electronAPI?.loadProfile?.(profileId)
       const next = text ?? ''
       setConfigText(next)
       setAppliedConfig(next)
-    })
+    } finally {
+      setIsLoadingProfile(false)
+    }
   }, [])
 
+  const refreshProfiles = useCallback(async () => {
+    const state = await window.electronAPI?.getProfiles?.()
+    if (state) {
+      setProfiles(state.profiles)
+      setActiveProfileId(state.activeProfile)
+    }
+    return state
+  }, [])
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      const state = await refreshProfiles()
+      const initialProfileId = state?.activeProfile ?? 1
+      setActiveProfileId(initialProfileId)
+      await loadProfileContent(initialProfileId)
+      setLastAppliedProfileId(initialProfileId)
+    }
+    bootstrap()
+  }, [loadProfileContent, refreshProfiles])
+
   const applyConfig = async () => {
+    if (!activeProfileId) {
+      return
+    }
     try {
-      const result = await window.electronAPI?.applyKeymap?.(configText)
-      setStatusMessage(result?.restarted ? 'Keymap applied (JSM restarted).' : 'Keymap applied live.')
+      const result = await window.electronAPI?.applyProfile?.(activeProfileId, configText)
+      const profileName = profiles.find(profile => profile.id === activeProfileId)?.name ?? `Profile ${activeProfileId}`
+      setStatusMessage(
+        result?.restarted ? `Applied ${profileName} (JSM restarted).` : `Applied ${profileName} without restart.`
+      )
       setAppliedConfig(configText)
+      setLastAppliedProfileId(activeProfileId)
       setTimeout(() => setStatusMessage(null), 3000)
     } catch (err) {
       console.error(err)
@@ -129,8 +169,66 @@ const handleRealWorldCalibrationChange = (value: string) => {
     })
   }
 
+  const hasPendingChanges = Boolean(activeProfileId && configText !== appliedConfig)
+  const activeProfileApplied = Boolean(activeProfileId && lastAppliedProfileId === activeProfileId)
+
   const handleCancel = () => {
     setConfigText(appliedConfig)
+  }
+
+  const handleProfileSwitch = async (profileId: number) => {
+    if (profileId === activeProfileId) return
+    if (hasPendingChanges) {
+      const shouldSwitch = window.confirm('You have unsaved changes on this profile. Switch anyway?')
+      if (!shouldSwitch) return
+    }
+    try {
+      const nextState = await window.electronAPI?.setActiveProfile?.(profileId)
+      if (nextState) {
+        setProfiles(nextState.profiles)
+        setActiveProfileId(nextState.activeProfile)
+        await loadProfileContent(nextState.activeProfile)
+      } else {
+        setActiveProfileId(profileId)
+        await loadProfileContent(profileId)
+      }
+      setStatusMessage(null)
+    } catch (err) {
+      console.error('Failed to switch profiles', err)
+    }
+  }
+
+  const handleProfileRename = async (profileId: number, name: string) => {
+    try {
+      const nextState = await window.electronAPI?.renameProfile?.(profileId, name)
+      if (nextState) {
+        setProfiles(nextState.profiles)
+      }
+    } catch (err) {
+      console.error('Failed to rename profile', err)
+    }
+  }
+
+  const handleProfileCopy = async (sourceId: number, targetId: number) => {
+    if (sourceId === targetId) return
+    try {
+      const updated = await window.electronAPI?.copyProfile?.(sourceId, targetId)
+      if (updated) {
+        setProfiles(updated.profiles)
+      }
+      if (targetId === activeProfileId) {
+        await loadProfileContent(targetId)
+        setLastAppliedProfileId(prev => (prev === targetId ? null : prev))
+      }
+      const sourceName = profiles.find(profile => profile.id === sourceId)?.name ?? `Profile ${sourceId}`
+      const targetName = profiles.find(profile => profile.id === targetId)?.name ?? `Profile ${targetId}`
+      setProfileCopyStatus(`Copied ${sourceName} into ${targetName}`)
+      setTimeout(() => setProfileCopyStatus(null), 2500)
+    } catch (err) {
+      console.error('Failed to copy profile', err)
+      setProfileCopyStatus('Failed to copy profile')
+      setTimeout(() => setProfileCopyStatus(null), 2500)
+    }
   }
 
   const handleRecalibrate = async () => {
@@ -152,8 +250,6 @@ const handleRealWorldCalibrationChange = (value: string) => {
     }
   }
 
-  const hasPendingChanges = configText !== appliedConfig
-
   const telemetryValues = {
     omega: formatNumber(asNumber(sample?.omega)),
     normalized: formatNumber(asNumber(sample?.t)),
@@ -163,6 +259,11 @@ const handleRealWorldCalibrationChange = (value: string) => {
   }
 
   const currentMode: 'static' | 'accel' = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
+  const activeProfileName = profiles.find(profile => profile.id === activeProfileId)?.name
+  const activeProfileFile = activeProfileId ? `keymap_0${activeProfileId}.txt` : null
+  const profileFileLabel = activeProfileFile
+    ? `${activeProfileFile} — ${activeProfileName ?? `Profile ${activeProfileId}`}`
+    : 'Select a profile to begin'
 
   return (
     <div className="app-frame">
@@ -176,6 +277,20 @@ const handleRealWorldCalibrationChange = (value: string) => {
           countdown={countdown}
           recalibrating={recalibrating}
           onRecalibrate={handleRecalibrate}
+        />
+
+        <ProfileManager
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          hasPendingChanges={hasPendingChanges}
+          isCalibrating={isCalibrating}
+          profileApplied={activeProfileApplied}
+          copyStatus={profileCopyStatus}
+          onSelectProfile={handleProfileSwitch}
+          onRenameProfile={handleProfileRename}
+          onCopyProfile={handleProfileCopy}
+          onApplyProfile={applyConfig}
+          applyDisabled={!activeProfileId || isLoadingProfile}
         />
 
         <SensitivityControls
@@ -202,7 +317,14 @@ const handleRealWorldCalibrationChange = (value: string) => {
 
         <TelemetryBanner {...telemetryValues} />
 
-        <ConfigEditor value={configText} onChange={setConfigText} onApply={applyConfig} statusMessage={statusMessage} />
+        <ConfigEditor
+          value={configText}
+          label={profileFileLabel}
+          disabled={!activeProfileId || isLoadingProfile}
+          onChange={setConfigText}
+          onApply={applyConfig}
+          statusMessage={statusMessage}
+        />
       </div>
     </div>
   )

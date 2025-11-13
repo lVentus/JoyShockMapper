@@ -19,18 +19,20 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 
 export function SensitivityGraph(props: SensitivityGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const {
+    minThreshold,
+    maxThreshold,
+    minSensX,
+    maxSensX,
+    minSensY,
+    maxSensY,
+    normalized,
+    currentSensX,
+    omega,
+    disableLiveDot,
+  } = props
 
   useEffect(() => {
-    const {
-      minThreshold,
-      maxThreshold,
-      minSensX,
-      maxSensX,
-      normalized,
-      currentSensX,
-      omega,
-      disableLiveDot,
-    } = props
 
     const canvas = canvasRef.current
     if (!canvas) return
@@ -199,18 +201,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     }
 
     ctx.textAlign = 'center'
-  }, [
-    props.minThreshold,
-    props.maxThreshold,
-    props.minSensX,
-    props.minSensY,
-    props.maxSensX,
-    props.maxSensY,
-    props.normalized,
-    props.currentSensX,
-    props.omega,
-    props.disableLiveDot,
-  ])
+  }, [minThreshold, maxThreshold, minSensX, minSensY, maxSensX, maxSensY, normalized, currentSensX, omega, disableLiveDot])
 
   return <canvas ref={canvasRef} className="legacy-curve-canvas" />
 }

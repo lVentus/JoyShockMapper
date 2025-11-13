@@ -3,11 +3,14 @@ const electron = require("electron");
 const electronAPI = {
   launchJSM: (calibrationSeconds = 5) => electron.ipcRenderer.invoke("launch-jsm", calibrationSeconds),
   terminateJSM: () => electron.ipcRenderer.invoke("terminate-jsm"),
-  saveKeymapFile: (text) => electron.ipcRenderer.invoke("save-keymap", text),
-  loadKeymapFile: () => electron.ipcRenderer.invoke("load-keymap"),
   minimizeTemporarily: () => electron.ipcRenderer.invoke("minimize-temporarily"),
-  applyKeymap: (text) => electron.ipcRenderer.invoke("apply-keymap", text),
-  recalibrateGyro: () => electron.ipcRenderer.invoke("recalibrate-gyro")
+  recalibrateGyro: () => electron.ipcRenderer.invoke("recalibrate-gyro"),
+  getProfiles: () => electron.ipcRenderer.invoke("get-profiles"),
+  loadProfile: (profileId) => electron.ipcRenderer.invoke("load-profile", profileId),
+  applyProfile: (profileId, text) => electron.ipcRenderer.invoke("apply-profile", profileId, text),
+  setActiveProfile: (profileId) => electron.ipcRenderer.invoke("set-active-profile", profileId),
+  renameProfile: (profileId, name) => electron.ipcRenderer.invoke("rename-profile", profileId, name),
+  copyProfile: (sourceId, targetId) => electron.ipcRenderer.invoke("copy-profile", sourceId, targetId)
 };
 const telemetryListeners = /* @__PURE__ */ new Set();
 electron.ipcRenderer.on("telemetry-sample", (_event, payload) => {

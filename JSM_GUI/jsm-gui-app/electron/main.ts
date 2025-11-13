@@ -33,13 +33,25 @@ let calibrationTimer: NodeJS.Timeout | null = null
 const TELEMETRY_PORT = 8974
 const BIN_DIR = path.join(process.env.APP_ROOT, 'bin')
 const STARTUP_FILE = path.join(BIN_DIR, 'OnStartUp.txt')
-const KEYMAP_FILE = path.join(BIN_DIR, 'keymap_01.txt')
-const KEYMAP_COMMAND = 'keymap_01.txt'
+const PROFILE_SLOTS = [1, 2, 3] as const
+type ProfileSlot = (typeof PROFILE_SLOTS)[number]
+const PROFILES_FILE = path.join(BIN_DIR, 'profiles.json')
 const STARTUP_COMMAND = 'OnStartUp.txt'
 const JSM_EXECUTABLE = path.join(BIN_DIR, process.platform === 'win32' ? 'JoyShockMapper.exe' : 'JoyShockMapper')
 const CONSOLE_INJECTOR = path.join(BIN_DIR, process.platform === 'win32' ? 'jsm-console-injector.exe' : 'jsm-console-injector')
 const LOG_FILE = path.join(process.env.APP_ROOT, 'jsm-gui.log')
 const WINDOW_STATE_FILE = path.join(process.env.APP_ROOT, 'window-state.json')
+
+type ProfileInfo = { id: ProfileSlot; name: string }
+type ProfilesState = { activeProfile: ProfileSlot; profiles: ProfileInfo[] }
+
+const DEFAULT_PROFILES: ProfilesState = {
+  activeProfile: 1,
+  profiles: PROFILE_SLOTS.map(id => ({ id, name: `Profile ${id}` })),
+}
+
+const PROFILE_FILENAME = (id: ProfileSlot) => `keymap_0${id}.txt`
+const PROFILE_PATH = (id: ProfileSlot) => path.join(BIN_DIR, PROFILE_FILENAME(id))
 
 async function writeLog(message: string) {
   const line = `[${new Date().toISOString()}] ${message}\n`
@@ -50,18 +62,135 @@ async function writeLog(message: string) {
   }
 }
 
+async function ensureFileExists(filePath: string, defaultContent = '') {
+  try {
+    await fs.access(filePath)
+  } catch {
+    await fs.mkdir(path.dirname(filePath), { recursive: true })
+    await fs.writeFile(filePath, defaultContent, 'utf8')
+  }
+}
+
+async function ensureProfilesFile() {
+  try {
+    await fs.access(PROFILES_FILE)
+  } catch {
+    await fs.writeFile(PROFILES_FILE, JSON.stringify(DEFAULT_PROFILES, null, 2), 'utf8')
+  }
+}
+
+function sanitizeProfilesState(state: ProfilesState | null | undefined): ProfilesState {
+  if (!state || !Array.isArray(state.profiles)) {
+    return DEFAULT_PROFILES
+  }
+  const names = PROFILE_SLOTS.map(id => {
+    const entry = state.profiles.find(p => p.id === id)
+    return {
+      id,
+      name: entry?.name?.trim()?.substring(0, 50) || `Profile ${id}`,
+    }
+  })
+  const active = PROFILE_SLOTS.includes(state.activeProfile as ProfileSlot)
+    ? (state.activeProfile as ProfileSlot)
+    : 1
+  return { activeProfile: active, profiles: names }
+}
+
+async function loadProfilesState(): Promise<ProfilesState> {
+  await ensureProfilesFile()
+  try {
+    const raw = await fs.readFile(PROFILES_FILE, 'utf8')
+    const parsed = JSON.parse(raw) as ProfilesState
+    const sanitized = sanitizeProfilesState(parsed)
+    if (sanitized !== parsed) {
+      await saveProfilesState(sanitized)
+    }
+    return sanitized
+  } catch {
+    await saveProfilesState(DEFAULT_PROFILES)
+    return DEFAULT_PROFILES
+  }
+}
+
+async function saveProfilesState(state: ProfilesState) {
+  const sanitized = sanitizeProfilesState(state)
+  await fs.writeFile(PROFILES_FILE, JSON.stringify(sanitized, null, 2), 'utf8')
+}
+
+function normalizeProfileId(input?: number | null, fallback: ProfileSlot = 1): ProfileSlot {
+  const candidate = Number(input)
+  if (PROFILE_SLOTS.includes(candidate as ProfileSlot)) {
+    return candidate as ProfileSlot
+  }
+  return fallback
+}
+
+async function updateStartupProfile(profileId: ProfileSlot) {
+  await ensureFileExists(STARTUP_FILE, '')
+  const filename = PROFILE_FILENAME(profileId)
+  const data = await fs.readFile(STARTUP_FILE, 'utf8').catch(() => '')
+  const lines = data.split(/\r?\n/)
+  let replaced = false
+  for (let i = 0; i < lines.length; i++) {
+    if (/^keymap_0[1-3]\.txt$/i.test(lines[i].trim())) {
+      lines[i] = filename
+      replaced = true
+    }
+  }
+  if (!replaced) {
+    lines.push(filename)
+  }
+  await fs.writeFile(STARTUP_FILE, lines.join('\n'), 'utf8')
+}
+
+async function loadProfileContent(profileId: ProfileSlot) {
+  await ensureFileExists(PROFILE_PATH(profileId), '')
+  return fs.readFile(PROFILE_PATH(profileId), 'utf8')
+}
+
+async function saveProfileContent(profileId: ProfileSlot, content: string) {
+  await ensureFileExists(PROFILE_PATH(profileId), '')
+  await fs.writeFile(PROFILE_PATH(profileId), content ?? '', 'utf8')
+}
+
+async function setActiveProfile(profileId: ProfileSlot) {
+  const state = await loadProfilesState()
+  if (state.activeProfile === profileId) {
+    return state
+  }
+  const next: ProfilesState = { ...state, activeProfile: profileId }
+  await saveProfilesState(next)
+  await updateStartupProfile(profileId)
+  return next
+}
+
+async function renameProfile(profileId: ProfileSlot, name: string) {
+  const state = await loadProfilesState()
+  const nextName = name?.trim()?.substring(0, 50) || `Profile ${profileId}`
+  const next: ProfilesState = {
+    ...state,
+    profiles: state.profiles.map(profile => (profile.id === profileId ? { ...profile, name: nextName } : profile)),
+  }
+  await saveProfilesState(next)
+  return next
+}
+
+async function copyProfile(source: ProfileSlot, target: ProfileSlot) {
+  if (source === target) {
+    return
+  }
+  const content = await loadProfileContent(source)
+  await saveProfileContent(target, content)
+}
+
 async function ensureRequiredFiles() {
-  try {
-    await fs.access(STARTUP_FILE)
-  } catch {
-    await fs.mkdir(BIN_DIR, { recursive: true })
-    await fs.writeFile(STARTUP_FILE, '', 'utf8')
+  await fs.mkdir(BIN_DIR, { recursive: true })
+  await ensureFileExists(STARTUP_FILE, '')
+  for (const slot of PROFILE_SLOTS) {
+    await ensureFileExists(PROFILE_PATH(slot), '')
   }
-  try {
-    await fs.access(KEYMAP_FILE)
-  } catch {
-    await fs.writeFile(KEYMAP_FILE, '', 'utf8')
-  }
+  const state = await loadProfilesState()
+  await updateStartupProfile(state.activeProfile)
 }
 
 async function loadWindowState() {
@@ -146,21 +275,6 @@ function stopTelemetryListener() {
   if (telemetrySocket) {
     telemetrySocket.close()
     telemetrySocket = null
-  }
-}
-
-async function saveKeymapFile(content: string) {
-  await ensureRequiredFiles()
-  await fs.writeFile(KEYMAP_FILE, content ?? '', 'utf8')
-}
-
-async function loadKeymapFile() {
-  try {
-    await ensureRequiredFiles()
-    const data = await fs.readFile(KEYMAP_FILE, 'utf8')
-    return data
-  } catch {
-    return ''
   }
 }
 
@@ -346,23 +460,46 @@ app.on('will-quit', () => {
   }
 })
 
-ipcMain.handle('save-keymap', async (_event, text: string) => {
-  await saveKeymapFile(text ?? '')
-  return true
+ipcMain.handle('get-profiles', async () => {
+  return loadProfilesState()
 })
 
-ipcMain.handle('load-keymap', async () => {
-  return loadKeymapFile()
+ipcMain.handle('load-profile', async (_event, profileId?: number) => {
+  const state = await loadProfilesState()
+  const id = normalizeProfileId(profileId, state.activeProfile)
+  return loadProfileContent(id)
 })
 
-ipcMain.handle('apply-keymap', async (_event, content: string) => {
-  await saveKeymapFile(content ?? '')
-  const injected = await tryInjectConsoleCommand(KEYMAP_COMMAND)
+ipcMain.handle('apply-profile', async (_event, profileId: number | undefined, content: string) => {
+  const state = await loadProfilesState()
+  const id = normalizeProfileId(profileId, state.activeProfile)
+  await saveProfileContent(id, content ?? '')
+  const injected = await tryInjectConsoleCommand(PROFILE_FILENAME(id))
   if (injected) {
     return { restarted: false }
   }
-  await writeLog('Console injection unavailable; leaving JSM running for debugging.')
+  await writeLog(`Console injection unavailable; leaving ${PROFILE_FILENAME(id)} pending.`)
   return { restarted: false }
+})
+
+ipcMain.handle('set-active-profile', async (_event, profileId: number) => {
+  const state = await loadProfilesState()
+  const id = normalizeProfileId(profileId, state.activeProfile)
+  return setActiveProfile(id)
+})
+
+ipcMain.handle('rename-profile', async (_event, profileId: number, name: string) => {
+  const state = await loadProfilesState()
+  const id = normalizeProfileId(profileId, state.activeProfile)
+  return renameProfile(id, name ?? '')
+})
+
+ipcMain.handle('copy-profile', async (_event, sourceId: number, targetId: number) => {
+  const state = await loadProfilesState()
+  const source = normalizeProfileId(sourceId, state.activeProfile)
+  const target = normalizeProfileId(targetId, state.activeProfile)
+  await copyProfile(source, target)
+  return loadProfilesState()
 })
 
 ipcMain.handle('recalibrate-gyro', async () => {
