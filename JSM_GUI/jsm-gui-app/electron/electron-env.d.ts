@@ -26,9 +26,10 @@ interface Window {
   electronAPI: {
     launchJSM: (calibrationSeconds?: number) => Promise<void>
     terminateJSM: () => Promise<void>
-    saveStartupFile: (text: string) => Promise<void>
-    loadStartupFile: () => Promise<string>
+    saveKeymapFile: (text: string) => Promise<void>
+    loadKeymapFile: () => Promise<string>
     minimizeTemporarily: () => Promise<void>
+    applyKeymap: (text: string) => Promise<{ restarted: boolean }>
     onCalibrationStatus: (callback: (payload: { calibrating: boolean; seconds?: number }) => void) => () => void
   }
   telemetry: {

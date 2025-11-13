@@ -3,9 +3,10 @@ import { ipcRenderer, contextBridge } from 'electron'
 const electronAPI = {
   launchJSM: (calibrationSeconds = 5) => ipcRenderer.invoke('launch-jsm', calibrationSeconds),
   terminateJSM: () => ipcRenderer.invoke('terminate-jsm'),
-  saveStartupFile: (text: string) => ipcRenderer.invoke('save-startup', text),
-  loadStartupFile: () => ipcRenderer.invoke('load-startup'),
+  saveKeymapFile: (text: string) => ipcRenderer.invoke('save-keymap', text),
+  loadKeymapFile: () => ipcRenderer.invoke('load-keymap'),
   minimizeTemporarily: () => ipcRenderer.invoke('minimize-temporarily'),
+  applyKeymap: (text: string) => ipcRenderer.invoke('apply-keymap', text),
 }
 
 const telemetryListeners = new Set<(payload: unknown) => void>()

@@ -3,9 +3,10 @@ const electron = require("electron");
 const electronAPI = {
   launchJSM: (calibrationSeconds = 5) => electron.ipcRenderer.invoke("launch-jsm", calibrationSeconds),
   terminateJSM: () => electron.ipcRenderer.invoke("terminate-jsm"),
-  saveStartupFile: (text) => electron.ipcRenderer.invoke("save-startup", text),
-  loadStartupFile: () => electron.ipcRenderer.invoke("load-startup"),
-  minimizeTemporarily: () => electron.ipcRenderer.invoke("minimize-temporarily")
+  saveKeymapFile: (text) => electron.ipcRenderer.invoke("save-keymap", text),
+  loadKeymapFile: () => electron.ipcRenderer.invoke("load-keymap"),
+  minimizeTemporarily: () => electron.ipcRenderer.invoke("minimize-temporarily"),
+  applyKeymap: (text) => electron.ipcRenderer.invoke("apply-keymap", text)
 };
 const telemetryListeners = /* @__PURE__ */ new Set();
 electron.ipcRenderer.on("telemetry-sample", (_event, payload) => {
