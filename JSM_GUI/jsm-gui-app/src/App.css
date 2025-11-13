@@ -65,14 +65,28 @@ header h1 {
 }
 
 .telemetry-readouts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.3rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
   font-size: 0.95rem;
 }
 
-.telemetry-readouts span strong {
+.telemetry-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.telemetry-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
   font-weight: 600;
+}
+
+.telemetry-value {
+  font-weight: 600;
+  color: #f2f2f2;
 }
 
 .control-panel {
@@ -394,6 +408,18 @@ input[type=number] {
   color: #999;
   margin-top: 0.5rem;
   display: block;
+}
+
+.graph-footer {
+  margin-top: 0.85rem;
+}
+
+.graph-footer .telemetry-banner {
+  margin: 0;
+  padding: 0.4rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .graph-placeholder {

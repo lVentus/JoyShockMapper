@@ -16,6 +16,8 @@ interface SensitivityGraphProps {
 const MAX_OMEGA = 500
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+const LIVE_SENS_COLOR = '#6a8bff'
+const LIVE_OUTPUT_COLOR = '#52c1ff'
 
 export function SensitivityGraph(props: SensitivityGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -190,14 +192,8 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
         ctx.fillStyle = color
         ctx.fill()
       }
-      drawDot(sensX, '#6a8bff')
-      drawDot(normalizedOutput, '#52c1ff')
-
-    ctx.fillStyle = '#ddd'
-    ctx.font = '12px monospace'
-    ctx.textAlign = 'right'
-    ctx.fillText(`LIVE → SPEED: ${speed.toFixed(1)}°/s`, baseWidth - 20, paddingTop + graphHeight - 20)
-    ctx.fillText(`Sensitivity: ${sensX.toFixed(3)}`, baseWidth - 20, paddingTop + graphHeight - 4)
+      drawDot(sensX, LIVE_SENS_COLOR)
+      drawDot(normalizedOutput, LIVE_OUTPUT_COLOR)
     }
 
     ctx.textAlign = 'center'

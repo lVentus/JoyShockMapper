@@ -4,7 +4,6 @@ import { useTelemetry } from './hooks/useTelemetry'
 import { parseSensitivityValues, updateKeymapEntry, removeKeymapEntry } from './utils/keymap'
 import { SensitivityControls } from './components/SensitivityControls'
 import { CurvePreview } from './components/CurvePreview'
-import { TelemetryBanner } from './components/TelemetryBanner'
 import { ConfigEditor } from './components/ConfigEditor'
 import { CalibrationCard } from './components/CalibrationCard'
 import { ProfileManager } from './components/ProfileManager'
@@ -12,8 +11,6 @@ import { ProfileManager } from './components/ProfileManager'
 const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 const formatNumber = (value: number | undefined, digits = 2) =>
   typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '0.00'
-const displayValue = (value: unknown) =>
-  typeof value === 'number' || typeof value === 'string' ? value : '—'
 
 type ProfileInfo = { id: number; name: string }
 
@@ -250,12 +247,26 @@ const handleRealWorldCalibrationChange = (value: string) => {
     }
   }
 
+  const formatTimestamp = (value: unknown) => {
+    if (typeof value === 'number') {
+      const date = new Date(value)
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      const ms = String(date.getMilliseconds()).padStart(3, '0')
+      return `${hours}:${minutes}:${seconds}.${ms}`
+    }
+    if (typeof value === 'string') {
+      return value
+    }
+    return '—'
+  }
+
   const telemetryValues = {
     omega: formatNumber(asNumber(sample?.omega)),
-    normalized: formatNumber(asNumber(sample?.t)),
     sensX: formatNumber(asNumber(sample?.sensX)),
     sensY: formatNumber(asNumber(sample?.sensY)),
-    timestamp: String(displayValue(sample?.ts)),
+    timestamp: formatTimestamp(sample?.ts),
   }
 
   const currentMode: 'static' | 'accel' = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
@@ -313,9 +324,12 @@ const handleRealWorldCalibrationChange = (value: string) => {
           onStaticSensYChange={handleStaticSensChange(1)}
         />
 
-        <CurvePreview sensitivity={sensitivity} sample={sample} hasPendingChanges={hasPendingChanges} />
-
-        <TelemetryBanner {...telemetryValues} />
+        <CurvePreview
+          sensitivity={sensitivity}
+          sample={sample}
+          hasPendingChanges={hasPendingChanges}
+          telemetry={telemetryValues}
+        />
 
         <ConfigEditor
           value={configText}

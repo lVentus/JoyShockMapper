@@ -1,14 +1,21 @@
 import { SensitivityValues } from '../utils/keymap'
 import { SensitivityGraph } from './SensitivityGraph'
 import { TelemetrySample } from '../hooks/useTelemetry'
+import { TelemetryBanner } from './TelemetryBanner'
 
 type CurvePreviewProps = {
   sensitivity: SensitivityValues
   sample: TelemetrySample | null
   hasPendingChanges: boolean
+  telemetry: {
+    omega: string
+    sensX: string
+    sensY: string
+    timestamp: string
+  }
 }
 
-export function CurvePreview({ sensitivity, sample, hasPendingChanges }: CurvePreviewProps) {
+export function CurvePreview({ sensitivity, sample, hasPendingChanges, telemetry }: CurvePreviewProps) {
   const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
   return (
     <section className="graph-panel">
@@ -30,7 +37,10 @@ export function CurvePreview({ sensitivity, sample, hasPendingChanges }: CurvePr
         omega={asNumber(sample?.omega)}
         disableLiveDot={hasPendingChanges}
       />
-      <small>Live dot follows telemetry t-value using yaw sensitivity.</small>
+      <small>Live dot tracks the current gyro speed against your sensitivity curve.</small>
+      <div className="graph-footer">
+        <TelemetryBanner {...telemetry} />
+      </div>
     </section>
   )
 }
