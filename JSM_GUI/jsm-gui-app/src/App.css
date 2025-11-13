@@ -58,6 +58,12 @@ header h1 {
   color: #9fe5c2;
 }
 
+.telemetry-subheading {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .telemetry-readouts {
   display: flex;
   flex-wrap: wrap;
@@ -154,6 +160,23 @@ input[type=number] {
   color: #ffb7af;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
+}
+
+.control-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.pending-banner {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 183, 77, 0.15);
+  border: 1px solid rgba(255, 183, 77, 0.4);
+  color: #ffd28a;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .lockable.locked input,

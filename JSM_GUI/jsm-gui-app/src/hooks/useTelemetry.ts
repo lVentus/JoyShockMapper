@@ -6,6 +6,7 @@ type TelemetrySample = {
   u?: number
   sensX?: number
   sensY?: number
+  curve?: string
   [key: string]: unknown
 }
 

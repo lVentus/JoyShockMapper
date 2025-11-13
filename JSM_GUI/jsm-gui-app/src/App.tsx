@@ -13,13 +13,16 @@ const displayValue = (value: unknown) =>
 function App() {
   const { sample, isCalibrating, countdown } = useTelemetry()
   const [configText, setConfigText] = useState('')
+  const [appliedConfig, setAppliedConfig] = useState('')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [recalibrating, setRecalibrating] = useState(false)
   const sensitivity = useMemo(() => parseSensitivityValues(configText), [configText])
 
   useEffect(() => {
     window.electronAPI?.loadKeymapFile?.().then(text => {
-      setConfigText(text ?? '')
+      const next = text ?? ''
+      setConfigText(next)
+      setAppliedConfig(next)
     })
   }, [])
 
@@ -27,6 +30,7 @@ function App() {
     try {
       const result = await window.electronAPI?.applyKeymap?.(configText)
       setStatusMessage(result?.restarted ? 'Keymap applied (JSM restarted).' : 'Keymap applied live.')
+      setAppliedConfig(configText)
       setTimeout(() => setStatusMessage(null), 3000)
     } catch (err) {
       console.error(err)
@@ -84,6 +88,8 @@ const handleRealWorldCalibrationChange = (value: string) => {
       setTimeout(() => setStatusMessage(null), 3000)
     }
   }
+
+  const hasPendingChanges = configText !== appliedConfig
 
   return (
     <div className="app-frame">
@@ -235,7 +241,12 @@ const handleRealWorldCalibrationChange = (value: string) => {
             />
           </label>
         </div>
-        <button onClick={applyConfig}>Apply Changes</button>
+        <div className="control-actions">
+          <button onClick={applyConfig}>Apply Changes</button>
+          {hasPendingChanges && (
+            <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
+          )}
+        </div>
       </section>
 
         <section className="graph-panel">
@@ -243,6 +254,7 @@ const handleRealWorldCalibrationChange = (value: string) => {
         <div className="graph-legend">
           <span><span className="legend-dot sensitivity" /> Sensitivity</span>
           <span><span className="legend-dot velocity" /> Normalized output velocity</span>
+          <span className="legend-curve">Curve: {sample?.curve ?? 'linear'}</span>
         </div>
         <SensitivityGraph
           minThreshold={sensitivity.minThreshold}
@@ -255,6 +267,7 @@ const handleRealWorldCalibrationChange = (value: string) => {
           currentSensX={asNumber(sample?.sensX)}
           currentSensY={asNumber(sample?.sensY)}
           omega={asNumber(sample?.omega)}
+          disableLiveDot={hasPendingChanges}
         />
         <small>Live dot follows telemetry t-value using yaw sensitivity.</small>
       </section>

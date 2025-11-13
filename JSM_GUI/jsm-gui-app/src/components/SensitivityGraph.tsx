@@ -10,6 +10,7 @@ interface SensitivityGraphProps {
   normalized?: number
   currentSensX?: number
   omega?: number
+  disableLiveDot?: boolean
 }
 
 const MAX_OMEGA = 500
@@ -31,6 +32,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       currentSensX,
       currentSensY,
       omega,
+      disableLiveDot,
     } = props
 
     const canvas = canvasRef.current
@@ -176,7 +178,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     }
 
     const live = resolveLive()
-    if (live) {
+    if (live && !disableLiveDot) {
       const speed = clamp(live.speed, 0, axisMaxX)
       const sensX = live.sensX ?? sensitivityAt(speed)
       const output = speed * sensX
@@ -210,6 +212,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     props.normalized,
     props.currentSensX,
     props.omega,
+    props.disableLiveDot,
   ])
 
   return <canvas ref={canvasRef} className="legacy-curve-canvas" />
