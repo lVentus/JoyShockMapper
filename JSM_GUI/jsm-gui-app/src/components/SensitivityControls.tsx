@@ -1,17 +1,25 @@
 import { SensitivityValues } from '../utils/keymap'
 import { StaticSensForm } from './StaticSensForm'
 import { AccelSensForm } from './AccelSensForm'
+import { Card } from './Card'
+import { TelemetrySample } from '../hooks/useTelemetry'
+import { CurvePreview } from './CurvePreview'
 
 type SensitivityControlsProps = {
   sensitivity: SensitivityValues
   isCalibrating: boolean
   mode: 'static' | 'accel'
   hasPendingChanges: boolean
+  sample: TelemetrySample | null
+  telemetry: {
+    omega: string
+    sensX: string
+    sensY: string
+    timestamp: string
+  }
   onModeChange: (mode: 'static' | 'accel') => void
   onApply: () => void
   onCancel: () => void
-  onInGameSensChange: (value: string) => void
-  onRealWorldCalibrationChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -27,11 +35,11 @@ export function SensitivityControls({
   isCalibrating,
   mode,
   hasPendingChanges,
+  sample,
+  telemetry,
   onModeChange,
   onApply,
   onCancel,
-  onInGameSensChange,
-  onRealWorldCalibrationChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -42,8 +50,13 @@ export function SensitivityControls({
   onStaticSensYChange,
 }: SensitivityControlsProps) {
   return (
-    <section className={`control-panel lockable ${isCalibrating ? 'locked' : ''}`}>
-      <div className="locked-overlay">Controls locked while JSM calibrates</div>
+    <Card
+      className="control-panel"
+      lockable
+      locked={isCalibrating}
+      lockMessage="Controls locked while JSM calibrates"
+    >
+      <h2>Gyro Sensitivity Controls</h2>
       <div className="mode-toggle">
         <button className={mode === 'static' ? 'active' : ''} onClick={() => onModeChange('static')}>
           Static Sensitivity
@@ -51,17 +64,6 @@ export function SensitivityControls({
         <button className={mode === 'accel' ? 'active' : ''} onClick={() => onModeChange('accel')}>
           Acceleration Curve
         </button>
-      </div>
-      <h2>Gyro Sensitivity Controls</h2>
-      <div className="flex-inputs">
-        <label>
-          In-Game Sens
-          <input type="number" step="0.1" value={sensitivity.inGameSens ?? ''} onChange={(e) => onInGameSensChange(e.target.value)} />
-        </label>
-        <label>
-          Real World Calibration
-          <input type="number" step="0.1" value={sensitivity.realWorldCalibration ?? ''} onChange={(e) => onRealWorldCalibrationChange(e.target.value)} />
-        </label>
       </div>
       {mode === 'static' ? (
         <StaticSensForm
@@ -89,6 +91,7 @@ export function SensitivityControls({
           <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
         )}
       </div>
-    </section>
+      <CurvePreview sensitivity={sensitivity} sample={sample} hasPendingChanges={hasPendingChanges} telemetry={telemetry} />
+    </Card>
   )
 }

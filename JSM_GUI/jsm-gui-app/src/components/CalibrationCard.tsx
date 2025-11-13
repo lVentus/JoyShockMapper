@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Card } from './Card'
 
 type CalibrationCardProps = {
   isCalibrating: boolean
@@ -15,7 +16,7 @@ export function CalibrationCard({ isCalibrating, countdown, recalibrating, onRec
   }, [isCalibrating, countdown])
 
   return (
-    <section className="calibration-card">
+    <Card className="calibration-card">
       {isCalibrating ? (
         <div className="calibration-pill">{message}</div>
       ) : (
@@ -23,6 +24,6 @@ export function CalibrationCard({ isCalibrating, countdown, recalibrating, onRec
           {recalibrating ? 'Recalibrating...' : 'Recalibrate Gyro'}
         </button>
       )}
-    </section>
+    </Card>
   )
 }

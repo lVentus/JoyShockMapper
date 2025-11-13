@@ -3,10 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTelemetry } from './hooks/useTelemetry'
 import { parseSensitivityValues, updateKeymapEntry, removeKeymapEntry } from './utils/keymap'
 import { SensitivityControls } from './components/SensitivityControls'
-import { CurvePreview } from './components/CurvePreview'
 import { ConfigEditor } from './components/ConfigEditor'
 import { CalibrationCard } from './components/CalibrationCard'
 import { ProfileManager } from './components/ProfileManager'
+import { GyroBehaviorControls } from './components/GyroBehaviorControls'
+import { NoiseSteadyingControls } from './components/NoiseSteadyingControls'
 
 const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 const formatNumber = (value: number | undefined, digits = 2) =>
@@ -87,6 +88,46 @@ function App() {
     const next = parseFloat(value)
     if (Number.isNaN(next)) return
     setConfigText(prev => updateKeymapEntry(prev, key, [next]))
+  }
+
+  const makeScalarHandler = (key: string) => (value: string) => {
+    if (value === '') {
+      setConfigText(prev => removeKeymapEntry(prev, key))
+      return
+    }
+    const next = parseFloat(value)
+    if (Number.isNaN(next)) return
+    setConfigText(prev => updateKeymapEntry(prev, key, [next]))
+  }
+
+  const handleCutoffSpeedChange = makeScalarHandler('GYRO_CUTOFF_SPEED')
+  const handleCutoffRecoveryChange = makeScalarHandler('GYRO_CUTOFF_RECOVERY')
+  const handleSmoothTimeChange = makeScalarHandler('GYRO_SMOOTH_TIME')
+  const handleSmoothThresholdChange = makeScalarHandler('GYRO_SMOOTH_THRESHOLD')
+  const handleTickTimeChange = makeScalarHandler('TICK_TIME')
+
+  const makeStringHandler = (key: string) => (value: string) => {
+    if (!value) {
+      setConfigText(prev => removeKeymapEntry(prev, key))
+      return
+    }
+    setConfigText(prev => updateKeymapEntry(prev, key, [value]))
+  }
+
+  const handleGyroSpaceChange = makeStringHandler('GYRO_SPACE')
+  const handleGyroAxisXChange = (value: string) => {
+    if (!value) {
+      setConfigText(prev => removeKeymapEntry(prev, 'GYRO_AXIS_X'))
+      return
+    }
+    setConfigText(prev => updateKeymapEntry(prev, 'GYRO_AXIS_X', [value]))
+  }
+  const handleGyroAxisYChange = (value: string) => {
+    if (!value) {
+      setConfigText(prev => removeKeymapEntry(prev, 'GYRO_AXIS_Y'))
+      return
+    }
+    setConfigText(prev => updateKeymapEntry(prev, 'GYRO_AXIS_Y', [value]))
   }
 
   const handleDualSensChange = (key: 'MIN_GYRO_SENS' | 'MAX_GYRO_SENS', index: 0 | 1) => (value: string) => {
@@ -304,16 +345,30 @@ const handleRealWorldCalibrationChange = (value: string) => {
           applyDisabled={!activeProfileId || isLoadingProfile}
         />
 
+        <GyroBehaviorControls
+          sensitivity={sensitivity}
+          isCalibrating={isCalibrating}
+          onInGameSensChange={handleInGameSensChange}
+          onRealWorldCalibrationChange={handleRealWorldCalibrationChange}
+          onTickTimeChange={handleTickTimeChange}
+          onGyroSpaceChange={handleGyroSpaceChange}
+          onGyroAxisXChange={handleGyroAxisXChange}
+          onGyroAxisYChange={handleGyroAxisYChange}
+          hasPendingChanges={hasPendingChanges}
+          onApply={applyConfig}
+          onCancel={handleCancel}
+        />
+
         <SensitivityControls
           sensitivity={sensitivity}
           isCalibrating={isCalibrating}
           mode={currentMode}
           hasPendingChanges={hasPendingChanges}
+          sample={sample}
+          telemetry={telemetryValues}
           onModeChange={(mode) => (mode === 'static' ? switchToStaticMode() : switchToAccelMode())}
           onApply={applyConfig}
           onCancel={handleCancel}
-          onInGameSensChange={handleInGameSensChange}
-          onRealWorldCalibrationChange={handleRealWorldCalibrationChange}
           onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
           onMaxThresholdChange={handleThresholdChange('MAX_GYRO_THRESHOLD')}
           onMinSensXChange={handleDualSensChange('MIN_GYRO_SENS', 0)}
@@ -324,10 +379,16 @@ const handleRealWorldCalibrationChange = (value: string) => {
           onStaticSensYChange={handleStaticSensChange(1)}
         />
 
-        <CurvePreview
+        <NoiseSteadyingControls
           sensitivity={sensitivity}
-          sample={sample}
+          isCalibrating={isCalibrating}
           hasPendingChanges={hasPendingChanges}
+          onApply={applyConfig}
+          onCancel={handleCancel}
+          onCutoffSpeedChange={handleCutoffSpeedChange}
+          onCutoffRecoveryChange={handleCutoffRecoveryChange}
+          onSmoothTimeChange={handleSmoothTimeChange}
+          onSmoothThresholdChange={handleSmoothThresholdChange}
           telemetry={telemetryValues}
         />
 

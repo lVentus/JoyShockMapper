@@ -7,9 +7,11 @@ type ConfigEditorProps = {
   statusMessage: string | null
 }
 
+import { Card } from './Card'
+
 export function ConfigEditor({ value, label, disabled = false, onChange, onApply, statusMessage }: ConfigEditorProps) {
   return (
-    <section className="config-panel legacy">
+    <Card className="config-panel legacy">
       <label>
         {label}
         <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={12} disabled={disabled} />
@@ -20,6 +22,6 @@ export function ConfigEditor({ value, label, disabled = false, onChange, onApply
         </button>
       </div>
       {statusMessage && <p className="status-message">{statusMessage}</p>}
-    </section>
+    </Card>
   )
 }

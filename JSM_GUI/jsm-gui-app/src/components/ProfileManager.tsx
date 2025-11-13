@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Card } from './Card'
 
 type ProfileInfo = {
   id: number
@@ -62,8 +63,12 @@ export function ProfileManager({
   }
 
   return (
-    <section className={`profile-card lockable ${isCalibrating ? 'locked' : ''}`}>
-      <div className="locked-overlay">Profiles locked while JSM calibrates</div>
+    <Card
+      className="profile-card"
+      lockable
+      locked={isCalibrating}
+      lockMessage="Profiles locked while JSM calibrates"
+    >
       <div className="profile-card-header">
         <h2>Profiles</h2>
         {hasPendingChanges && <span className="profile-warning">Unsaved changes on current profile</span>}
@@ -131,6 +136,6 @@ export function ProfileManager({
           Apply Selected Profile
         </button>
       </div>
-    </section>
+    </Card>
   )
 }

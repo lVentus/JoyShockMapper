@@ -9,6 +9,14 @@ export interface SensitivityValues {
   maxThreshold?: number
   gyroSensX?: number
   gyroSensY?: number
+  cutoffSpeed?: number
+  cutoffRecovery?: number
+  smoothTime?: number
+  smoothThreshold?: number
+  gyroSpace?: string
+  gyroAxisX?: string
+  gyroAxisY?: string
+  tickTime?: number
 }
 
 const LINE_REGEX = (key: string) => new RegExp(`^\\s*${key}\\s*=\\s*(.+)$`, 'im')
@@ -29,6 +37,10 @@ export function parseSensitivityValues(text: string): SensitivityValues {
     return parseNumbers(match?.[1], limit)
   }
   const single = (key: string) => get(key, 1)[0]
+  const raw = (key: string) => {
+    const match = text.match(LINE_REGEX(key))
+    return match?.[1]?.trim()
+  }
   const minSens = get('MIN_GYRO_SENS', 2)
   const maxSens = get('MAX_GYRO_SENS', 2)
   const staticSens = get('GYRO_SENS', 2)
@@ -44,6 +56,14 @@ export function parseSensitivityValues(text: string): SensitivityValues {
     maxThreshold: single('MAX_GYRO_THRESHOLD'),
     gyroSensX: staticSens[0],
     gyroSensY: staticSens[1],
+    cutoffSpeed: single('GYRO_CUTOFF_SPEED'),
+    cutoffRecovery: single('GYRO_CUTOFF_RECOVERY'),
+    smoothTime: single('GYRO_SMOOTH_TIME'),
+    smoothThreshold: single('GYRO_SMOOTH_THRESHOLD'),
+    gyroSpace: raw('GYRO_SPACE'),
+    gyroAxisX: raw('GYRO_AXIS_X'),
+    gyroAxisY: raw('GYRO_AXIS_Y'),
+    tickTime: single('TICK_TIME'),
   }
 
   if (result.gyroSensX !== undefined) {
@@ -60,7 +80,18 @@ export function parseSensitivityValues(text: string): SensitivityValues {
   if (result.maxThreshold === undefined) {
     result.maxThreshold = 100
   }
-
+  if (result.cutoffSpeed === undefined) {
+    result.cutoffSpeed = 0
+  }
+  if (result.cutoffRecovery === undefined) {
+    result.cutoffRecovery = 0
+  }
+  if (result.smoothTime === undefined) {
+    result.smoothTime = 0.005
+  }
+  if (result.smoothThreshold === undefined) {
+    result.smoothThreshold = 8
+  }
   return result
 }
 

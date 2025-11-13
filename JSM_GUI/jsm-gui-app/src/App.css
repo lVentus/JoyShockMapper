@@ -21,6 +21,20 @@ body {
   box-sizing: border-box;
 }
 
+.legacy-shell > * + * {
+  margin-top: 1rem;
+}
+
+.app-card {
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: #181818;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 header {
   text-align: center;
   margin-bottom: 1rem;
@@ -89,11 +103,18 @@ header h1 {
   color: #f2f2f2;
 }
 
-.control-panel {
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 1.25rem;
-  background: #181818;
+.telemetry-inline .telemetry-banner {
+  margin: 0;
+  padding: 0.4rem 0 0.6rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.control-panel,
+.profile-card,
+.graph-panel,
+.config-panel {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -119,6 +140,16 @@ header h1 {
 }
 
 .flex-inputs input {
+  margin-top: 0.35rem;
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #222;
+  color: #eee;
+  font-size: 1rem;
+}
+
+.flex-inputs select {
   margin-top: 0.35rem;
   padding: 0.55rem;
   border-radius: 8px;
@@ -214,14 +245,9 @@ input[type=number] {
 }
 
 .profile-card {
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 1.25rem;
-  background: #181818;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
 .profile-card-header {
@@ -360,18 +386,6 @@ input[type=number] {
   color: #ffffff;
 }
 
-.graph-panel {
-  margin-top: 1.5rem;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 1rem;
-  background: #181818;
-}
-
-.graph-panel h2 {
-  margin: 0 0 0.6rem;
-}
-
 .graph-legend {
   display: flex;
   gap: 1.5rem;
@@ -414,14 +428,6 @@ input[type=number] {
   margin-top: 0.85rem;
 }
 
-.graph-footer .telemetry-banner {
-  margin: 0;
-  padding: 0.4rem 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-}
-
 .graph-placeholder {
   padding: 1rem;
   border: 1px dashed #444;
@@ -430,12 +436,19 @@ input[type=number] {
   text-align: center;
 }
 
+.graph-live-readout {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #ddd;
+}
+
+.graph-live-readout span strong {
+  font-weight: 600;
+  color: #fff;
+}
+
 .config-panel {
-  margin-top: 1.5rem;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 1rem;
-  background: #181818;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -464,15 +477,20 @@ input[type=number] {
   color: #8ff5cd;
   font-weight: 600;
 }
-.calibration-card {
+.primary-card {
   border: 1px solid #333;
   border-radius: 12px;
-  padding: 0.9rem 1rem;
+  padding: 1.25rem;
   background: #181818;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.calibration-card {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 1rem;
 }
 
 .recalibrate-btn {
