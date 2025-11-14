@@ -8,6 +8,7 @@ import { CalibrationCard } from './components/CalibrationCard'
 import { ProfileManager } from './components/ProfileManager'
 import { GyroBehaviorControls } from './components/GyroBehaviorControls'
 import { NoiseSteadyingControls } from './components/NoiseSteadyingControls'
+import { Card } from './components/Card'
 
 const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 const formatNumber = (value: number | undefined, digits = 2) =>
@@ -26,6 +27,7 @@ function App() {
   const [lastAppliedProfileId, setLastAppliedProfileId] = useState<number | null>(null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [profileCopyStatus, setProfileCopyStatus] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'gyro' | 'keymap'>('gyro')
   const sensitivity = useMemo(() => parseSensitivityValues(configText), [configText])
 
   const loadProfileContent = useCallback(async (profileId: number) => {
@@ -345,61 +347,97 @@ const handleRealWorldCalibrationChange = (value: string) => {
           applyDisabled={!activeProfileId || isLoadingProfile}
         />
 
-        <GyroBehaviorControls
-          sensitivity={sensitivity}
-          isCalibrating={isCalibrating}
-          onInGameSensChange={handleInGameSensChange}
-          onRealWorldCalibrationChange={handleRealWorldCalibrationChange}
-          onTickTimeChange={handleTickTimeChange}
-          onGyroSpaceChange={handleGyroSpaceChange}
-          onGyroAxisXChange={handleGyroAxisXChange}
-          onGyroAxisYChange={handleGyroAxisYChange}
-          hasPendingChanges={hasPendingChanges}
-          onApply={applyConfig}
-          onCancel={handleCancel}
-        />
+        <div className="tab-bar">
+          <button
+            className={`tab-button ${activeTab === 'gyro' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gyro')}
+          >
+            Gyro & Sensitivity
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'keymap' ? 'active' : ''}`}
+            onClick={() => setActiveTab('keymap')}
+          >
+            Keymap
+          </button>
+        </div>
 
-        <SensitivityControls
-          sensitivity={sensitivity}
-          isCalibrating={isCalibrating}
-          mode={currentMode}
-          hasPendingChanges={hasPendingChanges}
-          sample={sample}
-          telemetry={telemetryValues}
-          onModeChange={(mode) => (mode === 'static' ? switchToStaticMode() : switchToAccelMode())}
-          onApply={applyConfig}
-          onCancel={handleCancel}
-          onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
-          onMaxThresholdChange={handleThresholdChange('MAX_GYRO_THRESHOLD')}
-          onMinSensXChange={handleDualSensChange('MIN_GYRO_SENS', 0)}
-          onMinSensYChange={handleDualSensChange('MIN_GYRO_SENS', 1)}
-          onMaxSensXChange={handleDualSensChange('MAX_GYRO_SENS', 0)}
-          onMaxSensYChange={handleDualSensChange('MAX_GYRO_SENS', 1)}
-          onStaticSensXChange={handleStaticSensChange(0)}
-          onStaticSensYChange={handleStaticSensChange(1)}
-        />
+        {activeTab === 'gyro' && (
+          <>
+            <GyroBehaviorControls
+              sensitivity={sensitivity}
+              isCalibrating={isCalibrating}
+              onInGameSensChange={handleInGameSensChange}
+              onRealWorldCalibrationChange={handleRealWorldCalibrationChange}
+              onTickTimeChange={handleTickTimeChange}
+              onGyroSpaceChange={handleGyroSpaceChange}
+              onGyroAxisXChange={handleGyroAxisXChange}
+              onGyroAxisYChange={handleGyroAxisYChange}
+              hasPendingChanges={hasPendingChanges}
+              onApply={applyConfig}
+              onCancel={handleCancel}
+            />
 
-        <NoiseSteadyingControls
-          sensitivity={sensitivity}
-          isCalibrating={isCalibrating}
-          hasPendingChanges={hasPendingChanges}
-          onApply={applyConfig}
-          onCancel={handleCancel}
-          onCutoffSpeedChange={handleCutoffSpeedChange}
-          onCutoffRecoveryChange={handleCutoffRecoveryChange}
-          onSmoothTimeChange={handleSmoothTimeChange}
-          onSmoothThresholdChange={handleSmoothThresholdChange}
-          telemetry={telemetryValues}
-        />
+            <SensitivityControls
+              sensitivity={sensitivity}
+              isCalibrating={isCalibrating}
+              mode={currentMode}
+              hasPendingChanges={hasPendingChanges}
+              sample={sample}
+              telemetry={telemetryValues}
+              onModeChange={(mode) => (mode === 'static' ? switchToStaticMode() : switchToAccelMode())}
+              onApply={applyConfig}
+              onCancel={handleCancel}
+              onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
+              onMaxThresholdChange={handleThresholdChange('MAX_GYRO_THRESHOLD')}
+              onMinSensXChange={handleDualSensChange('MIN_GYRO_SENS', 0)}
+              onMinSensYChange={handleDualSensChange('MIN_GYRO_SENS', 1)}
+              onMaxSensXChange={handleDualSensChange('MAX_GYRO_SENS', 0)}
+              onMaxSensYChange={handleDualSensChange('MAX_GYRO_SENS', 1)}
+              onStaticSensXChange={handleStaticSensChange(0)}
+              onStaticSensYChange={handleStaticSensChange(1)}
+            />
 
-        <ConfigEditor
-          value={configText}
-          label={profileFileLabel}
-          disabled={!activeProfileId || isLoadingProfile}
-          onChange={setConfigText}
-          onApply={applyConfig}
-          statusMessage={statusMessage}
-        />
+            <NoiseSteadyingControls
+              sensitivity={sensitivity}
+              isCalibrating={isCalibrating}
+              hasPendingChanges={hasPendingChanges}
+              onApply={applyConfig}
+              onCancel={handleCancel}
+              onCutoffSpeedChange={handleCutoffSpeedChange}
+              onCutoffRecoveryChange={handleCutoffRecoveryChange}
+              onSmoothTimeChange={handleSmoothTimeChange}
+              onSmoothThresholdChange={handleSmoothThresholdChange}
+              telemetry={telemetryValues}
+            />
+
+            <ConfigEditor
+              value={configText}
+              label={profileFileLabel}
+              disabled={!activeProfileId || isLoadingProfile}
+              onChange={setConfigText}
+              onApply={applyConfig}
+              statusMessage={statusMessage}
+            />
+          </>
+        )}
+
+        {activeTab === 'keymap' && (
+          <>
+            <Card className="control-panel">
+              <h2>Keymap</h2>
+              <p>Keymap editing UI is coming soon. Use the config text below in the meantime.</p>
+            </Card>
+            <ConfigEditor
+              value={configText}
+              label={profileFileLabel}
+              disabled={!activeProfileId || isLoadingProfile}
+              onChange={setConfigText}
+              onApply={applyConfig}
+              statusMessage={statusMessage}
+            />
+          </>
+        )}
       </div>
     </div>
   )
