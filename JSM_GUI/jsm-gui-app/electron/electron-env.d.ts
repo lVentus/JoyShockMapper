@@ -35,6 +35,7 @@ interface Window {
     copyProfile: (sourceId: number, targetId: number) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
     getCalibrationSeconds: () => Promise<number>
     setCalibrationSeconds: (seconds: number) => Promise<number>
+    importProfileConfig: (profileId: number, content: string) => Promise<{ success: boolean; error?: string }>
     onCalibrationStatus: (callback: (payload: { calibrating: boolean; seconds?: number }) => void) => () => void
   }
   telemetry: {

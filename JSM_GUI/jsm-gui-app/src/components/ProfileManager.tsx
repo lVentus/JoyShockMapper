@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card } from './Card'
 
 type ProfileInfo = {
@@ -18,6 +18,7 @@ type ProfileManagerProps = {
   copyStatus: string | null
   onApplyProfile: () => void
   applyDisabled?: boolean
+  onImportProfile?: (fileContent: string) => void
 }
 
 export function ProfileManager({
@@ -32,11 +33,13 @@ export function ProfileManager({
   copyStatus,
   onApplyProfile,
   applyDisabled = false,
+  onImportProfile,
 }: ProfileManagerProps) {
   const [nameDrafts, setNameDrafts] = useState<Record<number, string>>({})
   const profileIds = useMemo(() => profiles.map(profile => profile.id), [profiles])
   const [copySource, setCopySource] = useState<number>(() => profileIds[0] ?? 1)
   const [copyTarget, setCopyTarget] = useState<number>(() => profileIds[1] ?? 2)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     const drafts: Record<number, string> = {}
@@ -77,7 +80,7 @@ export function ProfileManager({
         {profiles.map(profile => (
           <button
             key={profile.id}
-            className={`profile-tab ${profile.id === activeProfileId ? 'active' : ''}`}
+            className={`pill-tab profile-tab ${profile.id === activeProfileId ? 'active' : ''}`}
             onClick={() => onSelectProfile(profile.id)}
           >
             {profile.name || `Profile ${profile.id}`}
@@ -120,7 +123,7 @@ export function ProfileManager({
           </select>
         </label>
         <button
-          className="secondary-btn"
+          className="primary-btn"
           onClick={() => onCopyProfile(copySource, copyTarget)}
           disabled={copySource === copyTarget}
         >
@@ -129,10 +132,35 @@ export function ProfileManager({
       </div>
       {copyStatus && <p className="profile-copy-status">{copyStatus}</p>}
       <div className="profile-actions">
+        <input
+          type="file"
+          accept=".txt,.cfg,.ini,*/*"
+          style={{ display: 'none' }}
+          ref={fileInputRef}
+          onChange={async (event) => {
+            const file = event.target.files?.[0]
+            if (file && onImportProfile) {
+              const text = await file.text()
+              onImportProfile(text)
+            }
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ''
+            }
+          }}
+        />
         {!profileApplied && activeProfileId && (
           <span className="profile-not-applied">Not running in JoyShockMapper yet</span>
         )}
-        <button className="secondary-btn" onClick={onApplyProfile} disabled={!activeProfileId || applyDisabled}>
+        {onImportProfile && (
+          <button className="primary-btn import-config-btn" onClick={() => fileInputRef.current?.click()}>
+            Import Existing Config
+          </button>
+        )}
+        <button
+          className="primary-btn apply-profile-btn"
+          onClick={onApplyProfile}
+          disabled={!activeProfileId || applyDisabled}
+        >
           Apply Selected Profile
         </button>
       </div>

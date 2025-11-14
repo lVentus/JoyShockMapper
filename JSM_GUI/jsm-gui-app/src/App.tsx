@@ -29,16 +29,6 @@ function App() {
   const [profileCopyStatus, setProfileCopyStatus] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'gyro' | 'keymap'>('gyro')
   const sensitivity = useMemo(() => parseSensitivityValues(configText), [configText])
-  const handleCalibrationSecondsInput = (value: number) => {
-    setCalibrationSeconds(value)
-  }
-
-  const handleCalibrationSecondsCommit = async (value: number) => {
-    const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0
-    setCalibrationSeconds(safe)
-    await window.electronAPI?.setCalibrationSeconds?.(safe)
-  }
-
   const loadProfileContent = useCallback(async (profileId: number) => {
     if (!profileId) return
     setIsLoadingProfile(true)
@@ -299,6 +289,25 @@ const handleRealWorldCalibrationChange = (value: string) => {
     }
   }
 
+  const handleImportProfile = async (fileContent: string) => {
+    if (!activeProfileId || !fileContent) return
+    try {
+      const result = await window.electronAPI?.importProfileConfig?.(activeProfileId, fileContent)
+      if (result?.success) {
+        await loadProfileContent(activeProfileId)
+        setLastAppliedProfileId(prev => (prev === activeProfileId ? null : prev))
+        setStatusMessage('Profile imported successfully.')
+      } else {
+        setStatusMessage('Failed to import profile.')
+      }
+    } catch (err) {
+      console.error('Failed to import profile', err)
+      setStatusMessage('Failed to import profile.')
+    } finally {
+      setTimeout(() => setStatusMessage(null), 3000)
+    }
+  }
+
   const formatTimestamp = (value: unknown) => {
     if (typeof value === 'number') {
       const date = new Date(value)
@@ -354,17 +363,18 @@ const handleRealWorldCalibrationChange = (value: string) => {
           onCopyProfile={handleProfileCopy}
           onApplyProfile={applyConfig}
           applyDisabled={!activeProfileId || isLoadingProfile}
+          onImportProfile={handleImportProfile}
         />
 
         <div className="tab-bar">
           <button
-            className={`tab-button ${activeTab === 'gyro' ? 'active' : ''}`}
+            className={`pill-tab tab-button ${activeTab === 'gyro' ? 'active' : ''}`}
             onClick={() => setActiveTab('gyro')}
           >
             Gyro & Sensitivity
           </button>
           <button
-            className={`tab-button ${activeTab === 'keymap' ? 'active' : ''}`}
+            className={`pill-tab tab-button ${activeTab === 'keymap' ? 'active' : ''}`}
             onClick={() => setActiveTab('keymap')}
           >
             Keymap

@@ -542,6 +542,34 @@ ipcMain.handle('copy-profile', async (_event, sourceId: number, targetId: number
   return loadProfilesState()
 })
 
+ipcMain.handle('import-profile-config', async (_event, profileId: number, fileContent: string) => {
+  const state = await loadProfilesState()
+  const id = normalizeProfileId(profileId, state.activeProfile)
+  try {
+    const filtered = (fileContent ?? '')
+      .split(/\r?\n/)
+      .filter(line => {
+        const trimmed = line.trim()
+        return (
+          trimmed.length > 0 &&
+          !/^SLEEP\b/i.test(trimmed) &&
+          !/^RESTART_GYRO_CALIBRATION\b/i.test(trimmed) &&
+          !/^FINISH_GYRO_CALIBRATION\b/i.test(trimmed) &&
+          !/^CLEAR\b/i.test(trimmed) &&
+          !/^RESET_MAPPINGS\b/i.test(trimmed)
+        )
+      })
+      .join('\n')
+    const header = ['RESET_MAPPINGS', 'TELEMETRY_ENABLED = ON', 'TELEMETRY_PORT = 8974']
+    const merged = `${header.join('\n')}\n${filtered.trim() ? filtered.trim() + '\n' : ''}`
+    await saveProfileContent(id, merged)
+    return { success: true }
+  } catch (err) {
+    await writeLog(`Profile import failed: ${String(err)}`)
+    return { success: false, error: String(err) }
+  }
+})
+
 ipcMain.handle('recalibrate-gyro', async () => {
   const injected = await tryInjectConsoleCommand(STARTUP_COMMAND)
   if (injected) {

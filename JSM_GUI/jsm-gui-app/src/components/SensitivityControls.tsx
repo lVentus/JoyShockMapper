@@ -58,10 +58,10 @@ export function SensitivityControls({
     >
       <h2>Gyro Sensitivity Controls</h2>
       <div className="mode-toggle">
-        <button className={mode === 'static' ? 'active' : ''} onClick={() => onModeChange('static')}>
+        <button className={`pill-tab ${mode === 'static' ? 'active' : ''}`} onClick={() => onModeChange('static')}>
           Static Sensitivity
         </button>
-        <button className={mode === 'accel' ? 'active' : ''} onClick={() => onModeChange('accel')}>
+        <button className={`pill-tab ${mode === 'accel' ? 'active' : ''}`} onClick={() => onModeChange('accel')}>
           Acceleration Curve
         </button>
       </div>

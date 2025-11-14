@@ -78,7 +78,7 @@ export function parseSensitivityValues(text: string): SensitivityValues {
     result.minThreshold = 0
   }
   if (result.maxThreshold === undefined) {
-    result.maxThreshold = 100
+    result.maxThreshold = 0
   }
   if (result.cutoffSpeed === undefined) {
     result.cutoffSpeed = 0
@@ -87,10 +87,10 @@ export function parseSensitivityValues(text: string): SensitivityValues {
     result.cutoffRecovery = 0
   }
   if (result.smoothTime === undefined) {
-    result.smoothTime = 0.005
+    result.smoothTime = 0
   }
   if (result.smoothThreshold === undefined) {
-    result.smoothThreshold = 8
+    result.smoothThreshold = 0
   }
   return result
 }

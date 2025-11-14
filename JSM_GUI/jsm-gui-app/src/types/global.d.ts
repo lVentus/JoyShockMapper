@@ -12,6 +12,7 @@ declare interface Window {
     recalibrateGyro?: () => Promise<{ success: boolean }>
     getCalibrationSeconds?: () => Promise<number>
     setCalibrationSeconds?: (seconds: number) => Promise<number>
+    importProfileConfig?: (profileId: number, content: string) => Promise<{ success: boolean; error?: string }>
     onCalibrationStatus?: (callback: (payload: { calibrating: boolean; seconds?: number }) => void) => () => void
   }
   telemetry?: {

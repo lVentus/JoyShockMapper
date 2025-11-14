@@ -31,19 +31,33 @@ body {
 }
 
 .tab-button {
-  border: 1px solid #444;
-  border-radius: 999px;
-  background: #1f1f1f;
-  color: #ddd;
-  padding: 0.4rem 1rem;
-  font-weight: 600;
-  cursor: pointer;
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
 }
 
-.tab-button.active {
+.pill-tab {
+  border: 1px solid #343434;
+  border-radius: 999px;
+  background: #161616;
+  color: #ddd;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.pill-tab:hover:not(.active) {
+  border-color: #5f73ff;
+  background: #242424;
+  color: #f0f0f0;
+}
+
+.pill-tab.active {
   border-color: #6a8bff;
   color: #fff;
-  box-shadow: 0 0 0 1px rgba(106, 139, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(106, 139, 255, 0.35), 0 0 12px rgba(106, 139, 255, 0.25);
 }
 
 .app-card {
@@ -195,21 +209,23 @@ input[type=number] {
   accent-color: #6a8bff;
 }
 
-.control-panel button,
-.config-actions button {
+.control-panel button:not(.pill-tab),
+.config-actions button:not(.pill-tab),
+.primary-btn {
   align-self: flex-start;
   padding: 0.6rem 1.4rem;
   background-color: #3a3a3a;
   color: #eee;
   border: 1px solid #555;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.2s ease;
 }
 
 .control-panel button:hover,
-.config-actions button:hover {
+.config-actions button:hover,
+.primary-btn:hover {
   background-color: #5a5a5a;
 }
 
@@ -295,20 +311,6 @@ input[type=number] {
 .profile-tab {
   flex: 1;
   min-width: 120px;
-  border-radius: 999px;
-  border: 1px solid #444;
-  background: #1f1f1f;
-  color: #ddd;
-  font-weight: 600;
-  padding: 0.55rem 1rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.profile-tab.active {
-  border-color: #6a8bff;
-  box-shadow: 0 0 0 1px rgba(106, 139, 255, 0.35), 0 0 10px rgba(106, 139, 255, 0.25);
-  color: #fff;
 }
 
 .profile-name-edit input,
@@ -347,9 +349,9 @@ input[type=number] {
   color: #ddd;
 }
 
-.profile-copy-row .secondary-btn[disabled] {
-  opacity: 0.5;
-  pointer-events: none;
+.profile-copy-row .primary-btn {
+  align-self: flex-end;
+  margin-top: 0.35rem;
 }
 
 .profile-copy-status {
@@ -361,14 +363,18 @@ input[type=number] {
 
 .profile-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.75rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.profile-actions .secondary-btn {
+.profile-actions .primary-btn {
   padding: 0.55rem 1.5rem;
+}
+
+.profile-actions .apply-profile-btn {
+  margin-left: auto;
 }
 
 .profile-not-applied {
@@ -381,7 +387,8 @@ input[type=number] {
 }
 
 .config-panel textarea:disabled,
-.config-actions button:disabled {
+.config-actions button:disabled,
+.primary-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -390,21 +397,9 @@ input[type=number] {
   gap: 0.5rem;
 }
 
-.mode-toggle button {
+.mode-toggle .pill-tab {
   flex: 1;
-  border-radius: 999px;
-  border: 1px solid #444;
-  background: #1f1f1f;
-  color: #ddd;
-  font-weight: 600;
-  padding: 0.55rem 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.mode-toggle button.active {
-  border-color: #6a8bff;
-  box-shadow: 0 0 0 1px rgba(106, 139, 255, 0.35), 0 0 12px rgba(106, 139, 255, 0.25);
-  color: #ffffff;
+  text-align: center;
 }
 
 .graph-legend {

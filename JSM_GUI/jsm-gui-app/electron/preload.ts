@@ -13,6 +13,7 @@ const electronAPI = {
   copyProfile: (sourceId: number, targetId: number) => ipcRenderer.invoke('copy-profile', sourceId, targetId),
   getCalibrationSeconds: () => ipcRenderer.invoke('get-calibration-seconds'),
   setCalibrationSeconds: (seconds: number) => ipcRenderer.invoke('set-calibration-seconds', seconds),
+  importProfileConfig: (profileId: number, content: string) => ipcRenderer.invoke('import-profile-config', profileId, content),
 }
 
 const telemetryListeners = new Set<(payload: unknown) => void>()

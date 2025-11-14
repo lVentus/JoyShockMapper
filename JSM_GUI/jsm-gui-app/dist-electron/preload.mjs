@@ -12,7 +12,8 @@ const electronAPI = {
   renameProfile: (profileId, name) => electron.ipcRenderer.invoke("rename-profile", profileId, name),
   copyProfile: (sourceId, targetId) => electron.ipcRenderer.invoke("copy-profile", sourceId, targetId),
   getCalibrationSeconds: () => electron.ipcRenderer.invoke("get-calibration-seconds"),
-  setCalibrationSeconds: (seconds) => electron.ipcRenderer.invoke("set-calibration-seconds", seconds)
+  setCalibrationSeconds: (seconds) => electron.ipcRenderer.invoke("set-calibration-seconds", seconds),
+  importProfileConfig: (profileId, content) => electron.ipcRenderer.invoke("import-profile-config", profileId, content)
 };
 const telemetryListeners = /* @__PURE__ */ new Set();
 electron.ipcRenderer.on("telemetry-sample", (_event, payload) => {
