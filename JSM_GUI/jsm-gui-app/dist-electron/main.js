@@ -477,7 +477,11 @@ ipcMain.handle("import-profile-config", async (_event, profileId, fileContent) =
   const state = await loadProfilesState();
   const id = normalizeProfileId(profileId, state.activeProfile);
   try {
-    const filtered = (fileContent ?? "").split(/\r?\n/).filter((line) => {
+    const filtered = (fileContent ?? "").split(/\r?\n/).map((line) => {
+      const hashIndex = line.indexOf("#");
+      const withoutComment = hashIndex >= 0 ? line.slice(0, hashIndex) : line;
+      return withoutComment.replace(/\s+$/, "");
+    }).filter((line) => {
       const trimmed = line.trim();
       return trimmed.length > 0 && !/^SLEEP\b/i.test(trimmed) && !/^RESTART_GYRO_CALIBRATION\b/i.test(trimmed) && !/^FINISH_GYRO_CALIBRATION\b/i.test(trimmed) && !/^CLEAR\b/i.test(trimmed) && !/^RESET_MAPPINGS\b/i.test(trimmed);
     }).join("\n");

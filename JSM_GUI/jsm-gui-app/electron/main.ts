@@ -548,6 +548,11 @@ ipcMain.handle('import-profile-config', async (_event, profileId: number, fileCo
   try {
     const filtered = (fileContent ?? '')
       .split(/\r?\n/)
+      .map(line => {
+        const hashIndex = line.indexOf('#')
+        const withoutComment = hashIndex >= 0 ? line.slice(0, hashIndex) : line
+        return withoutComment.replace(/\s+$/, '')
+      })
       .filter(line => {
         const trimmed = line.trim()
         return (
