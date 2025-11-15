@@ -150,11 +150,20 @@ async function copyProfile(source, target) {
 }
 async function ensureRequiredFiles() {
   await fs.mkdir(BIN_DIR, { recursive: true });
-  await ensureFileExists(STARTUP_FILE, "");
+  const state = await loadProfilesState();
+  const startupTemplate = [
+    "COUNTER_OS_MOUSE_SPEED",
+    "TELEMETRY_ENABLED = ON",
+    "TELEMETRY_PORT = 8974",
+    "RESTART_GYRO_CALIBRATION",
+    "SLEEP 5",
+    "FINISH_GYRO_CALIBRATION",
+    PROFILE_FILENAME(state.activeProfile)
+  ].join("\n");
+  await fs.writeFile(STARTUP_FILE, startupTemplate, "utf8");
   for (const slot of PROFILE_SLOTS) {
     await ensureFileExists(PROFILE_PATH(slot), "");
   }
-  const state = await loadProfilesState();
   await updateStartupProfile(state.activeProfile);
 }
 async function loadCalibrationSecondsFromStartup() {
@@ -446,6 +455,7 @@ ipcMain.handle("load-profile", async (_event, profileId) => {
   return loadProfileContent(id);
 });
 ipcMain.handle("apply-profile", async (_event, profileId, content) => {
+  await ensureRequiredFiles();
   const state = await loadProfilesState();
   const id = normalizeProfileId(profileId, state.activeProfile);
   await saveProfileContent(id, content ?? "");

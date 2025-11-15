@@ -310,12 +310,20 @@ function App() {
   }
 
 const handleInGameSensChange = (value: string) => {
+  if (value === '') {
+    setConfigText(prev => removeKeymapEntry(prev, 'IN_GAME_SENS'))
+    return
+  }
   const next = parseFloat(value)
   if (Number.isNaN(next)) return
   setConfigText(prev => updateKeymapEntry(prev, 'IN_GAME_SENS', [next]))
 }
 
 const handleRealWorldCalibrationChange = (value: string) => {
+  if (value === '') {
+    setConfigText(prev => removeKeymapEntry(prev, 'REAL_WORLD_CALIBRATION'))
+    return
+  }
   const next = parseFloat(value)
   if (Number.isNaN(next)) return
   setConfigText(prev => updateKeymapEntry(prev, 'REAL_WORLD_CALIBRATION', [next]))
