@@ -29,6 +29,30 @@ const formatNumber = (value: number | undefined, digits = 2) =>
 type ProfileInfo = { id: number; name: string }
 const TOGGLE_SPECIALS = ['GYRO_ON', 'GYRO_OFF'] as const
 const DEFAULT_HOLD_PRESS_TIME = 0.15
+const REQUIRED_HEADER_LINES = [
+  { pattern: /^RESET_MAPPINGS\b/i, value: 'RESET_MAPPINGS' },
+  { pattern: /^TELEMETRY_ENABLED\b/i, value: 'TELEMETRY_ENABLED = ON' },
+  { pattern: /^TELEMETRY_PORT\b/i, value: 'TELEMETRY_PORT = 8974' },
+]
+
+const ensureHeaderLines = (text: string) => {
+  const lines = text.split(/\r?\n/)
+  const remaining: string[] = []
+  lines.forEach(line => {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      remaining.push(line)
+      return
+    }
+    if (REQUIRED_HEADER_LINES.some(entry => entry.pattern.test(trimmed))) {
+      return
+    }
+    remaining.push(line)
+  })
+  const header = REQUIRED_HEADER_LINES.map(entry => entry.value)
+  const rest = remaining.join('\n').trimStart()
+  return rest ? `${header.join('\n')}\n${rest}` : header.join('\n')
+}
 const clearToggleAssignments = (text: string, command: string) => {
   let next = text
   TOGGLE_SPECIALS.forEach(toggle => {
@@ -142,13 +166,17 @@ function App() {
     if (!activeProfileId) {
       return
     }
+    const sanitizedConfig = ensureHeaderLines(configText)
+    if (sanitizedConfig !== configText) {
+      setConfigText(sanitizedConfig)
+    }
     try {
-      const result = await window.electronAPI?.applyProfile?.(activeProfileId, configText)
+      const result = await window.electronAPI?.applyProfile?.(activeProfileId, sanitizedConfig)
       const profileName = profiles.find(profile => profile.id === activeProfileId)?.name ?? `Profile ${activeProfileId}`
       setStatusMessage(
         result?.restarted ? `Applied ${profileName} (JSM restarted).` : `Applied ${profileName} without restart.`
       )
-      setAppliedConfig(configText)
+      setAppliedConfig(sanitizedConfig)
       setLastAppliedProfileId(activeProfileId)
       setTimeout(() => setStatusMessage(null), 3000)
     } catch (err) {
