@@ -758,31 +758,6 @@ const handleDeleteLibraryProfile = async (name: string) => {
           <h1>JoyShockMapper Gyro UI</h1>
         </header>
 
-        <CalibrationCard
-          isCalibrating={isCalibrating}
-          countdown={countdown}
-          recalibrating={recalibrating}
-          onRecalibrate={handleRecalibrate}
-        />
-
-        <ProfileManager
-          currentProfileName={currentLibraryProfile}
-          hasPendingChanges={hasPendingChanges}
-          isCalibrating={isCalibrating}
-          profileApplied={configText === appliedConfig}
-          onApplyProfile={applyConfig}
-          applyDisabled={isCalibrating}
-          onImportProfile={handleImportProfile}
-          libraryProfiles={libraryProfiles}
-          libraryLoading={isLibraryLoading}
-          editedProfileNames={editedLibraryNames}
-          onProfileNameChange={handleLibraryProfileNameChange}
-          onRenameProfile={handleRenameProfile}
-          onDeleteProfile={handleDeleteLibraryProfile}
-          onAddProfile={handleCreateProfile}
-          onLoadLibraryProfile={handleLoadProfileFromLibrary}
-        />
-
         <div className="tab-bar">
           <button
             className={`pill-tab tab-button ${activeTab === 'gyro' ? 'active' : ''}`}
@@ -809,6 +784,31 @@ const handleDeleteLibraryProfile = async (name: string) => {
             Sticks
           </button>
         </div>
+
+        <CalibrationCard
+          isCalibrating={isCalibrating}
+          countdown={countdown}
+          recalibrating={recalibrating}
+          onRecalibrate={handleRecalibrate}
+        />
+
+        <ProfileManager
+          currentProfileName={currentLibraryProfile}
+          hasPendingChanges={hasPendingChanges}
+          isCalibrating={isCalibrating}
+          profileApplied={configText === appliedConfig}
+          onApplyProfile={applyConfig}
+          applyDisabled={isCalibrating}
+          onImportProfile={handleImportProfile}
+          libraryProfiles={libraryProfiles}
+          libraryLoading={isLibraryLoading}
+          editedProfileNames={editedLibraryNames}
+          onProfileNameChange={handleLibraryProfileNameChange}
+          onRenameProfile={handleRenameProfile}
+          onDeleteProfile={handleDeleteLibraryProfile}
+          onAddProfile={handleCreateProfile}
+          onLoadLibraryProfile={handleLoadProfileFromLibrary}
+        />
 
         {activeTab === 'gyro' && (
           <>
