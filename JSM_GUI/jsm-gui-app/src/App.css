@@ -653,6 +653,22 @@ input[type=number] {
   gap: 1rem;
 }
 
+.keymap-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 1.2rem;
+  flex-wrap: wrap;
+}
+
+.keymap-section-actions .secondary-btn {
+  min-width: 140px;
+}
+
+.keymap-section-actions .pending-banner {
+  font-size: 0.85rem;
+}
+
 .binding-row {
   display: flex;
   flex-direction: column;

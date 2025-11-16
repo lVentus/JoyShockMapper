@@ -43,18 +43,25 @@ type KeymapControlsProps = {
   onSimPressWindowChange: (value: string) => void
 }
 
-type FaceButtonDefinition = {
+type ButtonDefinition = {
   command: string
   description: string
   playstation: string
   xbox: string
 }
 
-const FACE_BUTTONS: FaceButtonDefinition[] = [
+const FACE_BUTTONS: ButtonDefinition[] = [
   { command: 'S', description: 'South / Bottom', playstation: 'Cross', xbox: 'A' },
   { command: 'E', description: 'East / Right', playstation: 'Circle', xbox: 'B' },
   { command: 'N', description: 'North / Top', playstation: 'Triangle', xbox: 'Y' },
   { command: 'W', description: 'West / Left', playstation: 'Square', xbox: 'X' },
+]
+
+const DPAD_BUTTONS: ButtonDefinition[] = [
+  { command: 'UP', description: 'D-pad Up', playstation: 'Up', xbox: 'Up' },
+  { command: 'DOWN', description: 'D-pad Down', playstation: 'Down', xbox: 'Down' },
+  { command: 'LEFT', description: 'D-pad Left', playstation: 'Left', xbox: 'Left' },
+  { command: 'RIGHT', description: 'D-pad Right', playstation: 'Right', xbox: 'Right' },
 ]
 
 const SPECIAL_BINDINGS = [
@@ -350,7 +357,7 @@ export function KeymapControls({
 
   const bindingRowsByButton = useMemo(() => {
     const record: Record<string, ButtonBindingRow[]> = {}
-    FACE_BUTTONS.forEach(({ command }) => {
+    ;[...FACE_BUTTONS, ...DPAD_BUTTONS].forEach(({ command }) => {
       record[command] = getButtonBindingRows(configText, command, manualRows[command] ?? {})
     })
     return record
@@ -504,6 +511,213 @@ export function KeymapControls({
     </div>
   )
 
+  const renderButtonCard = (button: ButtonDefinition) => {
+    const rows = bindingRowsByButton[button.command] ?? []
+    const specialKey = specialsByButton[button.command] as keyof typeof SPECIAL_LABELS | undefined
+    const tapSpecialLabel = specialKey ? SPECIAL_LABELS[specialKey] ?? '' : ''
+    const buttonHasTrackball = Boolean(
+      rows.some(row => {
+        const binding = row.binding?.toUpperCase()
+        return binding ? binding.includes('TRACK') : false
+      }) || (specialKey && TRACKBALL_SPECIALS.has(specialKey))
+    )
+    const existingSlots = new Set(rows.map(row => row.slot))
+    return (
+      <div className="keymap-row" key={button.command}>
+        <div className="keymap-label">
+          <span className="button-name">{layout === 'playstation' ? button.playstation : button.xbox}</span>
+          <span className="button-meta">{button.description}</span>
+        </div>
+        <div className="keymap-binding-controls">
+          {rows.map(row => {
+            const isCapturing = captureTarget?.button === button.command && captureTarget.slot === row.slot
+            const hasExtraRows = rows.length > 1
+            const isSpecialValue = Boolean(row.binding && SPECIAL_LABELS[row.binding])
+            const displayValue = (() => {
+              if (row.slot === 'tap') {
+                if (row.binding) return row.binding
+                return tapSpecialLabel
+              }
+              if (isSpecialValue && row.binding) {
+                return SPECIAL_LABELS[row.binding]
+              }
+              return row.binding || ''
+            })()
+            const showHeader = row.slot !== 'tap' || hasExtraRows
+            const headerLabel = row.slot === 'tap' && hasExtraRows ? 'Regular Press' : row.label
+            const rowSpecialOptions = MODIFIER_SLOT_TYPES.includes(row.slot as BindingSlot)
+              ? SPECIAL_OPTION_MANUAL_LIST
+              : SPECIAL_OPTION_LIST
+            const specialValue =
+              row.slot === 'tap'
+                ? specialKey ?? ''
+                : isSpecialValue && row.binding
+                  ? row.binding
+                  : ''
+            const needsModifier = MODIFIER_SLOT_TYPES.includes(row.slot as BindingSlot)
+            const modifierValue = needsModifier
+              ? row.modifierCommand ??
+                manualRows[button.command]?.[row.slot]?.modifierCommand ??
+                getDefaultModifierForButton(button.command, modifierOptions)
+              : undefined
+            const modifierLabel = row.slot === 'simultaneous' ? 'Combine with' : 'Modifier button'
+            let rowModifierOptions = modifierOptions
+            if (
+              needsModifier &&
+              modifierValue &&
+              !modifierOptions.some(option => option.value === modifierValue)
+            ) {
+              rowModifierOptions = [...modifierOptions, { value: modifierValue, label: modifierValue }]
+            }
+            return (
+              <BindingRow
+                key={`${button.command}-${row.slot}`}
+                label={headerLabel}
+                showHeader={showHeader}
+                displayValue={displayValue}
+                isManual={row.isManual}
+                isCapturing={isCapturing}
+                captureLabel={captureLabel}
+                onBeginCapture={() => beginCapture(button.command, row.slot, needsModifier ? modifierValue : undefined)}
+                onCancelCapture={cancelCapture}
+                onClear={() => {
+                  if (row.slot === 'tap') {
+                    if (row.binding) {
+                      onBindingChange(button.command, row.slot, null)
+                    } else if (specialKey) {
+                      onClearSpecialAction(specialKey, button.command)
+                    }
+                  } else {
+                    const options = needsModifier ? { modifier: modifierValue } : undefined
+                    onBindingChange(button.command, row.slot, null, options)
+                  }
+                }}
+                onRemoveRow={row.isManual ? () => removeManualRow(button.command, row.slot) : undefined}
+                disableClear={!displayValue}
+                specialOptions={rowSpecialOptions}
+                specialValue={specialValue}
+                modifierOptions={needsModifier ? rowModifierOptions : undefined}
+                modifierValue={modifierValue}
+                modifierLabel={needsModifier ? modifierLabel : undefined}
+                onModifierChange={
+                  needsModifier
+                    ? (selected) => handleModifierSelection(button.command, row.slot, row, selected)
+                    : undefined
+                }
+                onSpecialChange={
+                  row.slot === 'tap'
+                    ? (selected) => {
+                        if (!selected) {
+                          if (specialKey) {
+                            onClearSpecialAction(specialKey, button.command)
+                          }
+                          return
+                        }
+                        onAssignSpecialAction(selected, button.command)
+                      }
+                    : (selected) => {
+                        if (!selected) {
+                          if (isSpecialValue) {
+                            const options = needsModifier ? { modifier: modifierValue } : undefined
+                            onBindingChange(button.command, row.slot, null, options)
+                          }
+                          return
+                        }
+                        onBindingChange(button.command, row.slot, selected, needsModifier ? { modifier: modifierValue } : undefined)
+                        ensureManualRow(button.command, row.slot)
+                      }
+                }
+              />
+            )
+          })}
+          {(() => {
+            const hasExtraRow = rows.length > 1
+            if (hasExtraRow) {
+              return null
+            }
+            const availableSlots = EXTRA_BINDING_SLOTS.filter(slot => !existingSlots.has(slot))
+            if (availableSlots.length === 0) {
+              return null
+            }
+            return (
+              <div className="binding-row add-binding-row" data-capture-ignore="true">
+                <select
+                  value=""
+                  onChange={(event) => {
+                    const selected = event.target.value as BindingSlot
+                    if (selected) {
+                      if (MODIFIER_SLOT_TYPES.includes(selected)) {
+                        ensureManualRow(button.command, selected, {
+                          modifierCommand: getDefaultModifierForButton(button.command, modifierOptions),
+                        })
+                      } else {
+                        ensureManualRow(button.command, selected)
+                      }
+                    }
+                    event.target.value = ''
+                  }}
+                >
+                  <option value="">Add extra binding</option>
+                  {availableSlots.map(slot => (
+                    <option key={`${button.command}-${slot}-opt`} value={slot}>
+                      {slot === 'hold'
+                        ? 'Hold (press & hold)'
+                        : slot === 'double'
+                          ? 'Double press'
+                          : slot === 'chord'
+                            ? 'Chorded press'
+                            : 'Simultaneous press'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )
+          })()}
+          {buttonHasTrackball && (
+            <div className="trackball-inline" data-capture-ignore="true">
+              <label>
+                Trackball decay
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={trackballDecay}
+                  onChange={(event) => onTrackballDecayChange(event.target.value)}
+                  placeholder="Default (1.0)"
+                />
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value={trackballSliderValue}
+                onChange={(event) => onTrackballDecayChange(event.target.value)}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderSectionActions = () => (
+    <div className="keymap-section-actions">
+      <button className="secondary-btn" onClick={onApply} disabled={isCalibrating}>
+        Apply Changes
+      </button>
+      {hasPendingChanges && (
+        <>
+          <button className="secondary-btn" onClick={onCancel}>
+            Cancel
+          </button>
+          <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
+        </>
+      )}
+    </div>
+  )
+
   return (
     <Card className="control-panel" lockable locked={isCalibrating} lockMessage="Keymapping locked while JSM calibrates">
       <div className="keymap-card-header">
@@ -554,212 +768,15 @@ export function KeymapControls({
         title="Face Buttons"
         description="Tap / Hold / Double / Chorded / Simultaneous bindings available via Add Extra Binding."
       >
-        <div className="keymap-grid">
-          {FACE_BUTTONS.map(button => {
-            const rows = bindingRowsByButton[button.command] ?? []
-            const specialKey = specialsByButton[button.command] as keyof typeof SPECIAL_LABELS | undefined
-            const tapSpecialLabel = specialKey ? SPECIAL_LABELS[specialKey] ?? '' : ''
-            const buttonHasTrackball = Boolean(
-              rows.some(row => {
-                const binding = row.binding?.toUpperCase()
-                return binding ? binding.includes('TRACK') : false
-              }) || (specialKey && TRACKBALL_SPECIALS.has(specialKey))
-            )
-            const existingSlots = new Set(rows.map(row => row.slot))
-            return (
-              <div className="keymap-row" key={button.command}>
-                <div className="keymap-label">
-                  <span className="button-name">{layout === 'playstation' ? button.playstation : button.xbox}</span>
-                  <span className="button-meta">{button.description} · Command {button.command}</span>
-                </div>
-                <div className="keymap-binding-controls">
-                  {rows.map(row => {
-                    const isCapturing = captureTarget?.button === button.command && captureTarget.slot === row.slot
-                    const hasExtraRows = rows.length > 1
-                    const isSpecialValue = Boolean(row.binding && SPECIAL_LABELS[row.binding])
-                    const displayValue = (() => {
-                      if (row.slot === 'tap') {
-                        if (row.binding) return row.binding
-                        return tapSpecialLabel
-                      }
-                      if (isSpecialValue && row.binding) {
-                        return SPECIAL_LABELS[row.binding]
-                      }
-                      return row.binding || ''
-                    })()
-                    const showHeader = row.slot !== 'tap' || hasExtraRows
-                    const headerLabel = row.slot === 'tap' && hasExtraRows ? 'Regular Press' : row.label
-                    const rowSpecialOptions = MODIFIER_SLOT_TYPES.includes(row.slot as BindingSlot)
-                      ? SPECIAL_OPTION_MANUAL_LIST
-                      : SPECIAL_OPTION_LIST
-                    const specialValue =
-                      row.slot === 'tap'
-                        ? specialKey ?? ''
-                        : isSpecialValue && row.binding
-                          ? row.binding
-                          : ''
-                    const needsModifier = MODIFIER_SLOT_TYPES.includes(row.slot as BindingSlot)
-                    const modifierValue = needsModifier
-                      ? row.modifierCommand ??
-                        manualRows[button.command]?.[row.slot]?.modifierCommand ??
-                        getDefaultModifierForButton(button.command, modifierOptions)
-                      : undefined
-                    const modifierLabel = row.slot === 'simultaneous' ? 'Combine with' : 'Modifier button'
-                    let rowModifierOptions = modifierOptions
-                    if (
-                      needsModifier &&
-                      modifierValue &&
-                      !modifierOptions.some(option => option.value === modifierValue)
-                    ) {
-                      rowModifierOptions = [...modifierOptions, { value: modifierValue, label: modifierValue }]
-                    }
-                    return (
-                      <BindingRow
-                        key={`${button.command}-${row.slot}`}
-                        label={headerLabel}
-                        showHeader={showHeader}
-                        displayValue={displayValue}
-                        isManual={row.isManual}
-                        isCapturing={isCapturing}
-                        captureLabel={captureLabel}
-                        onBeginCapture={() => beginCapture(button.command, row.slot, needsModifier ? modifierValue : undefined)}
-                        onCancelCapture={cancelCapture}
-                        onClear={() => {
-                          if (row.slot === 'tap') {
-                            if (row.binding) {
-                              onBindingChange(button.command, row.slot, null)
-                            } else if (specialKey) {
-                              onClearSpecialAction(specialKey, button.command)
-                            }
-                          } else {
-                            const options = needsModifier ? { modifier: modifierValue } : undefined
-                            onBindingChange(button.command, row.slot, null, options)
-                          }
-                        }}
-                        onRemoveRow={row.isManual ? () => removeManualRow(button.command, row.slot) : undefined}
-                        disableClear={!displayValue}
-                        specialOptions={rowSpecialOptions}
-                        specialValue={specialValue}
-                        modifierOptions={needsModifier ? rowModifierOptions : undefined}
-                        modifierValue={modifierValue}
-                        modifierLabel={needsModifier ? modifierLabel : undefined}
-                        onModifierChange={
-                          needsModifier
-                            ? (selected) =>
-                                handleModifierSelection(button.command, row.slot, row, selected)
-                            : undefined
-                        }
-                        onSpecialChange={
-                          row.slot === 'tap'
-                            ? (selected) => {
-                                if (!selected) {
-                                  if (specialKey) {
-                                    onClearSpecialAction(specialKey, button.command)
-                                  }
-                                  return
-                                }
-                                onAssignSpecialAction(selected, button.command)
-                              }
-                            : (selected) => {
-                                if (!selected) {
-                                  if (isSpecialValue) {
-                                    const options = needsModifier ? { modifier: modifierValue } : undefined
-                                    onBindingChange(button.command, row.slot, null, options)
-                                  }
-                                  return
-                                }
-                                onBindingChange(button.command, row.slot, selected, needsModifier ? { modifier: modifierValue } : undefined)
-                                ensureManualRow(button.command, row.slot)
-                              }
-                        }
-                      />
-                    )
-                  })}
-                  {(() => {
-                    const hasExtraRow = rows.length > 1
-                    if (hasExtraRow) {
-                      return null
-                    }
-                    const availableSlots = EXTRA_BINDING_SLOTS.filter(slot => !existingSlots.has(slot))
-                    if (availableSlots.length === 0) {
-                      return null
-                    }
-                    return (
-                      <div className="binding-row add-binding-row" data-capture-ignore="true">
-                        <select
-                          value=""
-                          onChange={(event) => {
-                            const selected = event.target.value as BindingSlot
-                            if (selected) {
-                              if (MODIFIER_SLOT_TYPES.includes(selected)) {
-                                ensureManualRow(button.command, selected, {
-                                  modifierCommand: getDefaultModifierForButton(button.command, modifierOptions),
-                                })
-                              } else {
-                                ensureManualRow(button.command, selected)
-                              }
-                            }
-                            event.target.value = ''
-                          }}
-                        >
-                          <option value="">Add extra binding</option>
-                          {availableSlots.map(slot => (
-                            <option key={`${button.command}-${slot}-opt`} value={slot}>
-                              {slot === 'hold'
-                                ? 'Hold (press & hold)'
-                                : slot === 'double'
-                                  ? 'Double press'
-                                  : slot === 'chord'
-                                    ? 'Chorded press'
-                                    : 'Simultaneous press'}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )
-                  })()}
-                  {buttonHasTrackball && (
-                    <div className="trackball-inline" data-capture-ignore="true">
-                      <label>
-                        Trackball decay
-                        <input
-                          type="number"
-                          min="0"
-                          max="5"
-                          step="0.1"
-                          value={trackballDecay}
-                          onChange={(event) => onTrackballDecayChange(event.target.value)}
-                          placeholder="Default (1.0)"
-                        />
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        value={trackballSliderValue}
-                        onChange={(event) => onTrackballDecayChange(event.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <div className="keymap-grid">{FACE_BUTTONS.map(renderButtonCard)}</div>
       </KeymapSection>
+      {renderSectionActions()}
 
-      <div className="control-actions">
-        <button className="secondary-btn" onClick={onApply}>Apply Changes</button>
-        {hasPendingChanges && (
-          <button className="secondary-btn" onClick={onCancel}>
-            Cancel
-          </button>
-        )}
-        {hasPendingChanges && (
-          <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
-        )}
-      </div>
+      <KeymapSection title="D-pad" description="Directional pad bindings with the same extra slots and special actions.">
+        <div className="keymap-grid">{DPAD_BUTTONS.map(renderButtonCard)}</div>
+      </KeymapSection>
+      {renderSectionActions()}
+
     </Card>
   )
 }
