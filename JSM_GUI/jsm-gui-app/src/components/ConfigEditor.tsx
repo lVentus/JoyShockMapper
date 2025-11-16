@@ -17,7 +17,7 @@ export function ConfigEditor({ value, label, disabled = false, onChange, onApply
         <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={12} disabled={disabled} />
       </label>
       <div className="config-actions">
-        <button onClick={onApply} disabled={disabled}>
+        <button className="secondary-btn" onClick={onApply} disabled={disabled}>
           Apply Changes
         </button>
       </div>

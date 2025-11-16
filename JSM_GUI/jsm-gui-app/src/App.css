@@ -209,25 +209,7 @@ input[type=number] {
   accent-color: #6a8bff;
 }
 
-.control-panel button:not(.pill-tab),
-.config-actions button:not(.pill-tab),
-.primary-btn {
-  align-self: flex-start;
-  padding: 0.6rem 1.4rem;
-  background-color: #3a3a3a;
-  color: #eee;
-  border: 1px solid #555;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-}
 
-.control-panel button:hover,
-.config-actions button:hover,
-.primary-btn:hover {
-  background-color: #5a5a5a;
-}
 
 .lockable.locked .locked-overlay {
   display: inline-flex;
@@ -260,8 +242,23 @@ input[type=number] {
   cursor: pointer;
 }
 
+.danger-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 120, 111, 0.6);
+  background: rgba(255, 120, 111, 0.08);
+  color: #ffb7af;
+  cursor: pointer;
+}
+
 .secondary-btn:hover {
   border-color: rgba(255, 255, 255, 0.4);
+}
+
+.secondary-btn:disabled,
+.danger-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .pending-banner {
@@ -287,11 +284,12 @@ input[type=number] {
   gap: 1rem;
 }
 
-.profile-card-header {
+.profile-card > h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  margin: 0;
 }
 
 .profile-warning {
@@ -349,7 +347,7 @@ input[type=number] {
   color: #ddd;
 }
 
-.profile-copy-row .primary-btn {
+.profile-copy-row .secondary-btn {
   align-self: flex-end;
   margin-top: 0.35rem;
 }
@@ -369,7 +367,7 @@ input[type=number] {
   flex-wrap: wrap;
 }
 
-.profile-actions .primary-btn {
+.profile-actions .secondary-btn {
   padding: 0.55rem 1.5rem;
 }
 
@@ -386,13 +384,103 @@ input[type=number] {
   margin: 0 0.5rem;
 }
 
-.profile-actions .apply-profile-btn {
-  margin-left: auto;
+.profile-library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-library-loading {
+  color: #b5b5b5;
+  font-size: 0.9rem;
+}
+
+.profile-library-header h3 {
+  margin: 0;
+}
+
+.profile-library-header p {
+  margin: 0.2rem 0 0;
+  color: #b5b5b5;
+  font-size: 0.9rem;
+}
+
+.profile-library-empty {
+  margin: 0;
+  color: #b5b5b5;
+  font-size: 0.9rem;
+}
+
+.profile-library-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-library-list li {
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  background: #121212;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-library-list li.active {
+  border-color: #6a8bff;
+  box-shadow: 0 0 0 1px rgba(106, 139, 255, 0.3);
+}
+
+.profile-library-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.profile-library-name input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+  background: #0f0f0f;
+  color: #f5f5f5;
+  font-weight: 600;
+}
+
+.profile-library-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+.profile-library-active-badge {
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(106, 139, 255, 0.5);
+  color: #cfd6ff;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.profile-library-actions-row {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .config-panel textarea:disabled,
-.config-actions button:disabled,
-.primary-btn:disabled {
+.config-actions button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -584,20 +672,24 @@ input[type=number] {
 .binding-input {
   width: 100%;
   text-align: left;
-  padding: 0.65rem 0.9rem;
+  padding: 0.6rem 0.95rem;
   border-radius: 999px;
-  border: 1px dashed #3b3b3b;
-  background: #1b1b1b;
-  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #f7f7f7;
   cursor: pointer;
   font-size: 0.95rem;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.binding-input:hover {
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 .binding-input.recording {
   border-color: #6a8bff;
   color: #cfd6ff;
-  background: #20223b;
+  background: rgba(106, 139, 255, 0.12);
 }
 
 .primary-binding-row {
@@ -648,7 +740,7 @@ input[type=number] {
 }
 
 .clear-binding-btn {
-  padding: 0.4rem 0.9rem;
+  padding: 0.6rem 0.95rem;
   border-radius: 999px;
   border: 1px solid #3b3b3b;
   background: transparent;
@@ -853,4 +945,12 @@ input[type=number] {
   border: 1px solid #3b3b3b;
   background: #1a1a1a;
   color: #eee;
+}
+.profile-actions.condensed {
+  justify-content: flex-end;
+}
+.profile-actions.below {
+  margin-top: 1rem;
+  border-top: 1px solid #2a2a2a;
+  padding-top: 1rem;
 }

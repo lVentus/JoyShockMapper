@@ -1,7 +1,7 @@
 # JoyShockMapper Console Injector
 
 A small helper executable that attaches to the running JoyShockMapper console and
-injects a command (e.g. `keymap_01.txt`) as if the user had typed it manually.
+injects any text command you pass it (e.g. a profile path such as `profiles-library/My Profile.txt`) as if the user had typed it manually.
 
 ## Building
 

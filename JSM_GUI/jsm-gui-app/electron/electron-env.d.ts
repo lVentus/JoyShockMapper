@@ -27,15 +27,14 @@ interface Window {
     launchJSM: (calibrationSeconds?: number) => Promise<void>
     terminateJSM: () => Promise<void>
     minimizeTemporarily: () => Promise<void>
-    getProfiles: () => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
-    loadProfile: (profileId?: number) => Promise<string>
-    applyProfile: (profileId: number, text: string) => Promise<{ restarted: boolean }>
-    setActiveProfile: (profileId: number) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
-    renameProfile: (profileId: number, name: string) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
-    copyProfile: (sourceId: number, targetId: number) => Promise<{ activeProfile: number; profiles: Array<{ id: number; name: string }> }>
+    applyProfile: (profilePath: string, text: string) => Promise<{ restarted: boolean; path?: string }>
     getCalibrationSeconds: () => Promise<number>
     setCalibrationSeconds: (seconds: number) => Promise<number>
-    importProfileConfig: (profileId: number, content: string) => Promise<{ success: boolean; error?: string }>
+    getActiveProfile: () => Promise<{ path: string; name: string; content: string }>
+    activateLibraryProfile: (name: string) => Promise<{ path: string; name: string; content: string }>
+    createLibraryProfile: () => Promise<{ path: string; name: string; content: string }>
+    renameLibraryProfile: (oldName: string, newName: string) => Promise<{ path: string; name: string; content: string }>
+    deleteLibraryProfile: (name: string) => Promise<{ success: boolean; fallback?: { path: string; name: string; content: string } }>
     onCalibrationStatus: (callback: (payload: { calibrating: boolean; seconds?: number }) => void) => () => void
   }
   telemetry: {

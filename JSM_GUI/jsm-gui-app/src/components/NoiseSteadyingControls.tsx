@@ -118,7 +118,7 @@ export function NoiseSteadyingControls({
         </label>
       </div>
       <div className="control-actions">
-        <button onClick={onApply}>Apply Changes</button>
+        <button className="secondary-btn" onClick={onApply}>Apply Changes</button>
         {hasPendingChanges && (
           <button className="secondary-btn" onClick={onCancel}>Cancel</button>
         )}
