@@ -139,7 +139,7 @@ function App() {
   const [currentLibraryProfile, setCurrentLibraryProfile] = useState<string | null>(null)
   const [activeProfilePath, setActiveProfilePath] = useState<string>('')
   const [recalibrating, setRecalibrating] = useState(false)
-  const [activeTab, setActiveTab] = useState<'gyro' | 'keymap'>('gyro')
+  const [activeTab, setActiveTab] = useState<'gyro' | 'keymap' | 'touchpad' | 'sticks'>('gyro')
   const sensitivity = useMemo(() => parseSensitivityValues(configText), [configText])
   const holdPressTimeState = useMemo(() => {
     const raw = getKeymapValue(configText, 'HOLD_PRESS_TIME')
@@ -796,6 +796,18 @@ const handleDeleteLibraryProfile = async (name: string) => {
           >
             Keymap
           </button>
+          <button
+            className={`pill-tab tab-button ${activeTab === 'touchpad' ? 'active' : ''}`}
+            onClick={() => setActiveTab('touchpad')}
+          >
+            Touchpad
+          </button>
+          <button
+            className={`pill-tab tab-button ${activeTab === 'sticks' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sticks')}
+          >
+            Sticks
+          </button>
         </div>
 
         {activeTab === 'gyro' && (
@@ -894,6 +906,18 @@ const handleDeleteLibraryProfile = async (name: string) => {
               statusMessage={statusMessage}
             />
           </>
+        )}
+        {activeTab === 'touchpad' && (
+          <div className="tab-placeholder">
+            <h2>Touchpad controls</h2>
+            <p>Placeholder card – we&apos;ll build the touchpad editor here soon.</p>
+          </div>
+        )}
+        {activeTab === 'sticks' && (
+          <div className="tab-placeholder">
+            <h2>Stick controls & modes</h2>
+            <p>Placeholder card – stick bindings, flick/aim modes, and ring settings will live here.</p>
+          </div>
         )}
       </div>
     </div>
