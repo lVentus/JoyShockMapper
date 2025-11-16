@@ -41,6 +41,8 @@ type KeymapControlsProps = {
   simPressWindowSeconds: number
   simPressWindowIsCustom: boolean
   onSimPressWindowChange: (value: string) => void
+  triggerThreshold: number
+  onTriggerThresholdChange: (value: string) => void
 }
 
 type ButtonDefinition = {
@@ -62,6 +64,24 @@ const DPAD_BUTTONS: ButtonDefinition[] = [
   { command: 'DOWN', description: 'D-pad Down', playstation: 'Down', xbox: 'Down' },
   { command: 'LEFT', description: 'D-pad Left', playstation: 'Left', xbox: 'Left' },
   { command: 'RIGHT', description: 'D-pad Right', playstation: 'Right', xbox: 'Right' },
+]
+
+const BUMPER_BUTTONS: ButtonDefinition[] = [
+  { command: 'L', description: 'Left bumper (L1 / LB)', playstation: 'L1', xbox: 'LB' },
+  { command: 'R', description: 'Right bumper (R1 / RB)', playstation: 'R1', xbox: 'RB' },
+]
+
+const TRIGGER_BUTTONS: ButtonDefinition[] = [
+  { command: 'ZL', description: 'Left trigger soft pull', playstation: 'L2', xbox: 'LT' },
+  { command: 'ZLF', description: 'Left trigger full pull', playstation: 'L2 Full', xbox: 'LT Full' },
+  { command: 'ZR', description: 'Right trigger soft pull', playstation: 'R2', xbox: 'RT' },
+  { command: 'ZRF', description: 'Right trigger full pull', playstation: 'R2 Full', xbox: 'RT Full' },
+]
+
+const CENTER_BUTTONS: ButtonDefinition[] = [
+  { command: '+', description: 'Options / Menu (plus)', playstation: 'Options', xbox: 'Options' },
+  { command: '-', description: 'Share / View (minus)', playstation: 'Share', xbox: 'View' },
+  { command: 'MIC', description: 'Microphone button', playstation: 'Mic', xbox: 'Mic' },
 ]
 
 const SPECIAL_BINDINGS = [
@@ -330,6 +350,8 @@ export function KeymapControls({
   simPressWindowSeconds,
   simPressWindowIsCustom,
   onSimPressWindowChange,
+  triggerThreshold,
+  onTriggerThresholdChange,
 }: KeymapControlsProps) {
   const [layout, setLayout] = useState<ControllerLayout>('playstation')
   const [captureTarget, setCaptureTarget] = useState<CaptureTarget | null>(null)
@@ -357,7 +379,13 @@ export function KeymapControls({
 
   const bindingRowsByButton = useMemo(() => {
     const record: Record<string, ButtonBindingRow[]> = {}
-    ;[...FACE_BUTTONS, ...DPAD_BUTTONS].forEach(({ command }) => {
+    ;[
+      ...FACE_BUTTONS,
+      ...DPAD_BUTTONS,
+      ...BUMPER_BUTTONS,
+      ...TRIGGER_BUTTONS,
+      ...CENTER_BUTTONS,
+    ].forEach(({ command }) => {
       record[command] = getButtonBindingRows(configText, command, manualRows[command] ?? {})
     })
     return record
@@ -761,8 +789,15 @@ export function KeymapControls({
             simPressInputValue,
             onSimPressWindowChange
           )}
+          {renderGlobalRow(
+            'Trigger threshold',
+            triggerThreshold > 0 ? `Custom TRIGGER_THRESHOLD = ${triggerThreshold.toFixed(2)}` : 'Default (0.00)',
+            triggerThreshold,
+            onTriggerThresholdChange
+          )}
         </div>
       </KeymapSection>
+      {renderSectionActions()}
 
       <KeymapSection
         title="Face Buttons"
@@ -774,6 +809,21 @@ export function KeymapControls({
 
       <KeymapSection title="D-pad" description="Directional pad bindings with the same extra slots and special actions.">
         <div className="keymap-grid">{DPAD_BUTTONS.map(renderButtonCard)}</div>
+      </KeymapSection>
+      {renderSectionActions()}
+
+      <KeymapSection title="Bumpers" description="L1/R1 bindings with the usual specials and extra slots.">
+        <div className="keymap-grid">{BUMPER_BUTTONS.map(renderButtonCard)}</div>
+      </KeymapSection>
+      {renderSectionActions()}
+
+      <KeymapSection title="Triggers" description="Soft/full pulls and threshold toggles for L2/R2.">
+        <div className="keymap-grid">{TRIGGER_BUTTONS.map(renderButtonCard)}</div>
+      </KeymapSection>
+      {renderSectionActions()}
+
+      <KeymapSection title="Center buttons" description="Options, Share, and Mic bindings.">
+        <div className="keymap-grid">{CENTER_BUTTONS.map(renderButtonCard)}</div>
       </KeymapSection>
       {renderSectionActions()}
 

@@ -19,7 +19,8 @@ export interface SensitivityValues {
   tickTime?: number
 }
 
-const LINE_REGEX = (key: string) => new RegExp(`^\\s*${key}\\s*=\\s*(.+)$`, 'im')
+const escapeKey = (key: string) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const LINE_REGEX = (key: string) => new RegExp(`^\\s*${escapeKey(key)}\\s*=\\s*(.+)$`, 'im')
 
 function parseNumbers(value?: string, limit = Infinity) {
   if (!value) return []

@@ -177,6 +177,16 @@ function App() {
   }, [configText])
   const simPressWindowSeconds = simPressWindowState.value
   const simPressWindowIsCustom = simPressWindowState.isCustom
+  const triggerThresholdValue = useMemo(() => {
+    const raw = getKeymapValue(configText, 'TRIGGER_THRESHOLD')
+    if (raw) {
+      const parsed = parseFloat(raw)
+      if (Number.isFinite(parsed)) {
+        return Math.min(1, Math.max(0, parsed))
+      }
+    }
+    return 0
+  }, [configText])
   const refreshLibraryProfiles = useCallback(async (): Promise<string[]> => {
     if (!window.electronAPI?.listLibraryProfiles) {
       setLibraryProfiles([])
@@ -292,6 +302,17 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
   }
   const handleDoublePressWindowChange = makeWindowHandler('DBL_PRESS_WINDOW')
   const handleSimPressWindowChange = makeWindowHandler('SIM_PRESS_WINDOW')
+
+  const handleTriggerThresholdChange = useCallback((value: string) => {
+    if (value === '') {
+      setConfigText(prev => removeKeymapEntry(prev, 'TRIGGER_THRESHOLD'))
+      return
+    }
+    const next = parseFloat(value)
+    if (Number.isNaN(next)) return
+    const clamped = Math.min(1, Math.max(0, next))
+    setConfigText(prev => updateKeymapEntry(prev, 'TRIGGER_THRESHOLD', [clamped]))
+  }, [])
 
   const makeStringHandler = (key: string) => (value: string) => {
     if (!value) {
@@ -860,6 +881,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               simPressWindowSeconds={simPressWindowSeconds}
               simPressWindowIsCustom={simPressWindowIsCustom}
               onSimPressWindowChange={handleSimPressWindowChange}
+              triggerThreshold={triggerThresholdValue}
+              onTriggerThresholdChange={handleTriggerThresholdChange}
               onModifierChange={handleModifierChange}
             />
             <ConfigEditor
