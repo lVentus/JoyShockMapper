@@ -456,6 +456,25 @@ input[type=number] {
   font-weight: 600;
 }
 
+.control-panel input[type='number'],
+.control-panel select,
+.global-control-input-group input[type='number'] {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+  background: #0f0f0f;
+  color: #f5f5f5;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.control-panel input[type='number']:focus,
+.control-panel select:focus,
+.global-control-input-group input[type='number']:focus {
+  border-color: rgba(255, 255, 255, 0.45);
+  outline: none;
+}
+
 .profile-library-buttons {
   display: flex;
   gap: 0.5rem;
@@ -558,11 +577,7 @@ input[type=number] {
 
 .global-control-input-group input[type='number'] {
   width: 5rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid #3b3b3b;
-  background: #1a1a1a;
-  color: #f5f5f5;
+  border-radius: 8px;
 }
 
 .global-control-unit {

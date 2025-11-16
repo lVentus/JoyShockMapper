@@ -120,7 +120,6 @@ export function GyroBehaviorControls({
           </select>
         </label>
       </div>
-      <small>Axis inversion only applies if you operate the gyro signal in reverse.</small>
       <div className="control-actions">
         <button className="secondary-btn" onClick={onApply}>Apply Changes</button>
         {hasPendingChanges && (

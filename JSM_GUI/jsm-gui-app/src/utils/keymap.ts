@@ -69,22 +69,16 @@ export function parseSensitivityValues(text: string): SensitivityValues {
   if (result.gyroSensX !== undefined) {
     result.minSensX = result.minSensX ?? result.gyroSensX
     result.maxSensX = result.maxSensX ?? result.gyroSensX
+    if (result.minThreshold === undefined) {
+      result.minThreshold = 0
+    }
+    if (result.maxThreshold === undefined) {
+      result.maxThreshold = 50
+    }
   }
   if (result.gyroSensY !== undefined) {
     result.minSensY = result.minSensY ?? result.gyroSensY
     result.maxSensY = result.maxSensY ?? result.gyroSensY
-  }
-  if (result.cutoffSpeed === undefined) {
-    result.cutoffSpeed = 0
-  }
-  if (result.cutoffRecovery === undefined) {
-    result.cutoffRecovery = 0
-  }
-  if (result.smoothTime === undefined) {
-    result.smoothTime = 0
-  }
-  if (result.smoothThreshold === undefined) {
-    result.smoothThreshold = 0
   }
   return result
 }
