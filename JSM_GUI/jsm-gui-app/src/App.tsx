@@ -21,6 +21,7 @@ import { ProfileManager } from './components/ProfileManager'
 import { GyroBehaviorControls } from './components/GyroBehaviorControls'
 import { NoiseSteadyingControls } from './components/NoiseSteadyingControls'
 import { KeymapControls } from './components/KeymapControls'
+import { MODESHIFT_BUTTON_OPTIONS } from './constants/modeshiftButtons'
 
 const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 const formatNumber = (value: number | undefined, digits = 2) =>
@@ -34,6 +35,8 @@ const REQUIRED_HEADER_LINES = [
   { pattern: /^TELEMETRY_ENABLED\b/i, value: 'TELEMETRY_ENABLED = ON' },
   { pattern: /^TELEMETRY_PORT\b/i, value: 'TELEMETRY_PORT = 8974' },
 ]
+const SENS_MODE_KEYS = ['MIN_GYRO_THRESHOLD', 'MAX_GYRO_THRESHOLD', 'MIN_GYRO_SENS', 'MAX_GYRO_SENS', 'GYRO_SENS'] as const
+const prefixedKey = (key: string, prefix?: string) => (prefix ? `${prefix}${key}` : key)
 
 const ensureHeaderLines = (text: string) => {
   const lines = text.split(/\r?\n/)
@@ -140,6 +143,7 @@ function App() {
   const [activeProfilePath, setActiveProfilePath] = useState<string>('')
   const [recalibrating, setRecalibrating] = useState(false)
   const [activeTab, setActiveTab] = useState<'gyro' | 'keymap' | 'touchpad' | 'sticks'>('gyro')
+  const [sensitivityView, setSensitivityView] = useState<'base' | 'modeshift'>('base')
   const sensitivity = useMemo(() => parseSensitivityValues(configText), [configText])
   const holdPressTimeState = useMemo(() => {
     const raw = getKeymapValue(configText, 'HOLD_PRESS_TIME')
@@ -175,8 +179,8 @@ function App() {
     }
     return { value: DEFAULT_WINDOW_SECONDS, isCustom: false }
   }, [configText])
-  const simPressWindowSeconds = simPressWindowState.value
-  const simPressWindowIsCustom = simPressWindowState.isCustom
+const simPressWindowSeconds = simPressWindowState.value
+const simPressWindowIsCustom = simPressWindowState.isCustom
   const triggerThresholdValue = useMemo(() => {
     const raw = getKeymapValue(configText, 'TRIGGER_THRESHOLD')
     if (raw) {
@@ -187,6 +191,20 @@ function App() {
     }
     return 0
   }, [configText])
+  const sensitivityModeshiftButton = useMemo(() => {
+    const regex = /^\s*([A-Z0-9+\-_]+)\s*,\s*(GYRO_SENS|MIN_GYRO_SENS|MAX_GYRO_SENS|MIN_GYRO_THRESHOLD|MAX_GYRO_THRESHOLD)\s*=/im
+    const match = configText.match(regex)
+    return match ? match[1].toUpperCase() : null
+  }, [configText])
+  useEffect(() => {
+    if (!sensitivityModeshiftButton && sensitivityView === 'modeshift') {
+      setSensitivityView('base')
+    }
+  }, [sensitivityModeshiftButton, sensitivityView])
+  const modeshiftSensitivity = useMemo(() => {
+    if (!sensitivityModeshiftButton) return undefined
+    return parseSensitivityValues(configText, { prefix: `${sensitivityModeshiftButton},` })
+  }, [configText, sensitivityModeshiftButton])
   const refreshLibraryProfiles = useCallback(async (): Promise<string[]> => {
     if (!window.electronAPI?.listLibraryProfiles) {
       setLibraryProfiles([])
@@ -264,14 +282,75 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
   }
 }, [activeProfilePath, configText, currentLibraryProfile])
 
+  const activeSensitivityPrefix = useMemo(() => {
+    if (sensitivityView === 'modeshift' && sensitivityModeshiftButton) {
+      return `${sensitivityModeshiftButton},`
+    }
+    return undefined
+  }, [sensitivityView, sensitivityModeshiftButton])
+
+  const resolveSensitivityKey = useCallback(
+    (key: string) => {
+      return activeSensitivityPrefix ? `${activeSensitivityPrefix}${key}` : key
+    },
+    [activeSensitivityPrefix]
+  )
+
+  const handleSensitivityModeshiftButtonChange = useCallback((value: string) => {
+    const nextButton = value || null
+    setConfigText(prev => {
+      let next = prev
+      if (sensitivityModeshiftButton) {
+        SENS_MODE_KEYS.forEach(key => {
+          next = removeKeymapEntry(next, `${sensitivityModeshiftButton},${key}`)
+        })
+      }
+      if (nextButton) {
+        const base = parseSensitivityValues(next)
+        if (base.gyroSensX !== undefined) {
+          next = updateKeymapEntry(next, `${nextButton},GYRO_SENS`, [
+            base.gyroSensX,
+            base.gyroSensY ?? base.gyroSensX,
+          ])
+        } else {
+          if (base.minSensX !== undefined || base.minSensY !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},MIN_GYRO_SENS`, [
+              base.minSensX ?? 0,
+              base.minSensY ?? base.minSensX ?? 0,
+            ])
+          }
+          if (base.maxSensX !== undefined || base.maxSensY !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},MAX_GYRO_SENS`, [
+              base.maxSensX ?? 0,
+              base.maxSensY ?? base.maxSensX ?? 0,
+            ])
+          }
+          if (base.minThreshold !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},MIN_GYRO_THRESHOLD`, [base.minThreshold])
+          }
+          if (base.maxThreshold !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},MAX_GYRO_THRESHOLD`, [base.maxThreshold])
+          }
+        }
+      }
+      return next
+    })
+    if (!nextButton) {
+      setSensitivityView('base')
+    }
+    if (nextButton) {
+      setSensitivityView('modeshift')
+    }
+  }, [sensitivityModeshiftButton])
+
   const handleThresholdChange = (key: 'MIN_GYRO_THRESHOLD' | 'MAX_GYRO_THRESHOLD') => (value: string) => {
     if (value === '') {
-      setConfigText(prev => removeKeymapEntry(prev, key))
+      setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey(key)))
       return
     }
     const next = parseFloat(value)
     if (Number.isNaN(next)) return
-    setConfigText(prev => updateKeymapEntry(prev, key, [next]))
+    setConfigText(prev => updateKeymapEntry(prev, resolveSensitivityKey(key), [next]))
   }
 
   const makeScalarHandler = (key: string) => (value: string) => {
@@ -340,37 +419,37 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
 
   const handleDualSensChange = (key: 'MIN_GYRO_SENS' | 'MAX_GYRO_SENS', index: 0 | 1) => (value: string) => {
     if (value === '') {
-      setConfigText(prev => removeKeymapEntry(prev, key))
+      setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey(key)))
       return
     }
     const next = parseFloat(value)
     if (Number.isNaN(next)) return
     setConfigText(prev => {
-      const parsed = parseSensitivityValues(prev)
+      const parsed = parseSensitivityValues(prev, activeSensitivityPrefix ? { prefix: activeSensitivityPrefix } : undefined)
       const current =
         key === 'MIN_GYRO_SENS'
           ? [parsed.minSensX ?? 0, parsed.minSensY ?? parsed.minSensX ?? 0]
           : [parsed.maxSensX ?? 0, parsed.maxSensY ?? parsed.maxSensX ?? 0]
       current[index] = next
-      return updateKeymapEntry(prev, key, current)
+      return updateKeymapEntry(prev, resolveSensitivityKey(key), current)
     })
   }
 
   const handleStaticSensChange = (index: 0 | 1) => (value: string) => {
     if (value === '') {
-      setConfigText(prev => removeKeymapEntry(prev, 'GYRO_SENS'))
+      setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey('GYRO_SENS')))
       return
     }
     const next = parseFloat(value)
     if (Number.isNaN(next)) return
     setConfigText(prev => {
-      const parsed = parseSensitivityValues(prev)
+      const parsed = parseSensitivityValues(prev, activeSensitivityPrefix ? { prefix: activeSensitivityPrefix } : undefined)
       const current: [number, number] = [
         parsed.gyroSensX ?? parsed.minSensX ?? parsed.maxSensX ?? 1,
         parsed.gyroSensY ?? parsed.minSensY ?? parsed.maxSensY ?? parsed.gyroSensX ?? 1,
       ]
       current[index] = next
-      return updateKeymapEntry(prev, 'GYRO_SENS', current)
+      return updateKeymapEntry(prev, resolveSensitivityKey('GYRO_SENS'), current)
     })
   }
 
@@ -546,31 +625,41 @@ const handleDeleteLibraryProfile = async (name: string) => {
   }
 }
 
-  const switchToStaticMode = () => {
-    const mode = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
-    if (mode === 'static') return
-    const defaultX = sensitivity.minSensX ?? sensitivity.maxSensX ?? 1
-    const defaultY = sensitivity.minSensY ?? sensitivity.maxSensY ?? defaultX
+  const switchToStaticMode = (prefix?: string) => {
     setConfigText(prev => {
-      let next = updateKeymapEntry(prev, 'GYRO_SENS', [defaultX, defaultY])
+      const values = parseSensitivityValues(prev, prefix ? { prefix } : undefined)
+      if (values.gyroSensX !== undefined) {
+        return prev
+      }
+      const defaultX = values.minSensX ?? values.maxSensX ?? 1
+      const defaultY = values.minSensY ?? values.maxSensY ?? defaultX
+      let next = updateKeymapEntry(prev, prefixedKey('GYRO_SENS', prefix), [defaultX, defaultY])
       ;['MIN_GYRO_SENS', 'MAX_GYRO_SENS', 'MIN_GYRO_THRESHOLD', 'MAX_GYRO_THRESHOLD'].forEach(key => {
-        next = removeKeymapEntry(next, key)
+        next = removeKeymapEntry(next, prefixedKey(key, prefix))
       })
       return next
     })
   }
 
-  const switchToAccelMode = () => {
-    const mode = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
-    if (mode === 'accel') return
-    const defaultX = sensitivity.gyroSensX ?? 1
-    const defaultY = sensitivity.gyroSensY ?? defaultX
+  const switchToAccelMode = (prefix?: string) => {
     setConfigText(prev => {
-      let next = removeKeymapEntry(prev, 'GYRO_SENS')
-      next = updateKeymapEntry(next, 'MIN_GYRO_SENS', [sensitivity.minSensX ?? defaultX, sensitivity.minSensY ?? defaultY])
-      next = updateKeymapEntry(next, 'MAX_GYRO_SENS', [sensitivity.maxSensX ?? defaultX, sensitivity.maxSensY ?? defaultY])
-      next = updateKeymapEntry(next, 'MIN_GYRO_THRESHOLD', [sensitivity.minThreshold ?? 0])
-      next = updateKeymapEntry(next, 'MAX_GYRO_THRESHOLD', [sensitivity.maxThreshold ?? 100])
+      const values = parseSensitivityValues(prev, prefix ? { prefix } : undefined)
+      if (values.gyroSensX === undefined) {
+        return prev
+      }
+      const defaultX = values.gyroSensX ?? 1
+      const defaultY = values.gyroSensY ?? defaultX
+      let next = removeKeymapEntry(prev, prefixedKey('GYRO_SENS', prefix))
+      next = updateKeymapEntry(next, prefixedKey('MIN_GYRO_SENS', prefix), [
+        values.minSensX ?? defaultX,
+        values.minSensY ?? defaultY,
+      ])
+      next = updateKeymapEntry(next, prefixedKey('MAX_GYRO_SENS', prefix), [
+        values.maxSensX ?? defaultX,
+        values.maxSensY ?? defaultY,
+      ])
+      next = updateKeymapEntry(next, prefixedKey('MIN_GYRO_THRESHOLD', prefix), [values.minThreshold ?? 0])
+      next = updateKeymapEntry(next, prefixedKey('MAX_GYRO_THRESHOLD', prefix), [values.maxThreshold ?? 100])
       return next
     })
   }
@@ -746,7 +835,10 @@ const handleDeleteLibraryProfile = async (name: string) => {
   }
   const trackballDecayValue = useMemo(() => getKeymapValue(configText, 'TRACKBALL_DECAY') ?? '', [configText])
 
-  const currentMode: 'static' | 'accel' = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
+  const baseMode: 'static' | 'accel' = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
+  const modeshiftMode: 'static' | 'accel' = modeshiftSensitivity?.gyroSensX !== undefined ? 'static' : 'accel'
+  const currentMode: 'static' | 'accel' =
+    sensitivityView === 'modeshift' && sensitivityModeshiftButton ? modeshiftMode : baseMode
   const profileLabel = currentLibraryProfile ?? 'Unsaved profile'
   const activeProfileFile = activeProfilePath || 'No active profile'
   const profileFileLabel = `${activeProfileFile} — ${profileLabel}`
@@ -828,12 +920,19 @@ const handleDeleteLibraryProfile = async (name: string) => {
 
             <SensitivityControls
               sensitivity={sensitivity}
+              modeshiftSensitivity={modeshiftSensitivity}
               isCalibrating={isCalibrating}
               mode={currentMode}
+              sensitivityView={sensitivityView}
               hasPendingChanges={hasPendingChanges}
               sample={sample}
               telemetry={telemetryValues}
-              onModeChange={(mode) => (mode === 'static' ? switchToStaticMode() : switchToAccelMode())}
+              onModeChange={(mode) =>
+                mode === 'static'
+                  ? switchToStaticMode(activeSensitivityPrefix)
+                  : switchToAccelMode(activeSensitivityPrefix)
+              }
+              onSensitivityViewChange={setSensitivityView}
               onApply={applyConfig}
               onCancel={handleCancel}
               onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
@@ -844,6 +943,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onMaxSensYChange={handleDualSensChange('MAX_GYRO_SENS', 1)}
               onStaticSensXChange={handleStaticSensChange(0)}
               onStaticSensYChange={handleStaticSensChange(1)}
+              modeshiftButton={sensitivityModeshiftButton}
+              onModeshiftButtonChange={handleSensitivityModeshiftButtonChange}
             />
 
             <NoiseSteadyingControls

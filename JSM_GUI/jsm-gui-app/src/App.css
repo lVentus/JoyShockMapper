@@ -523,9 +523,28 @@ input[type=number] {
   gap: 0.5rem;
 }
 
+.mode-toggle.secondary {
+  margin-top: 0.75rem;
+}
+
 .mode-toggle .pill-tab {
   flex: 1;
   text-align: center;
+}
+
+.sensitivity-shift-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sensitivity-shift-row select {
+  border-radius: 999px;
+  border: 1px solid #2d2d2d;
+  background: #101010;
+  color: #f0f0f0;
+  padding: 0.4rem 0.75rem;
 }
 
 .keymap-card-header {

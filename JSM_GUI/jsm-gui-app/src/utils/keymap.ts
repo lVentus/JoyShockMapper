@@ -32,14 +32,18 @@ function parseNumbers(value?: string, limit = Infinity) {
     .filter(num => Number.isFinite(num))
 }
 
-export function parseSensitivityValues(text: string): SensitivityValues {
+export function parseSensitivityValues(text: string, options?: { prefix?: string }): SensitivityValues {
+  const keyWithPrefix = (key: string) => {
+    if (!options?.prefix) return key
+    return `${options.prefix}${key}`
+  }
   const get = (key: string, limit = Infinity) => {
-    const match = text.match(LINE_REGEX(key))
+    const match = text.match(LINE_REGEX(keyWithPrefix(key)))
     return parseNumbers(match?.[1], limit)
   }
   const single = (key: string) => get(key, 1)[0]
   const raw = (key: string) => {
-    const match = text.match(LINE_REGEX(key))
+    const match = text.match(LINE_REGEX(keyWithPrefix(key)))
     return match?.[1]?.trim()
   }
   const minSens = get('MIN_GYRO_SENS', 2)

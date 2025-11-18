@@ -4,11 +4,14 @@ import { AccelSensForm } from './AccelSensForm'
 import { Card } from './Card'
 import { TelemetrySample } from '../hooks/useTelemetry'
 import { CurvePreview } from './CurvePreview'
+import { MODESHIFT_BUTTON_OPTIONS } from '../constants/modeshiftButtons'
 
 type SensitivityControlsProps = {
   sensitivity: SensitivityValues
+  modeshiftSensitivity?: SensitivityValues
   isCalibrating: boolean
   mode: 'static' | 'accel'
+  sensitivityView: 'base' | 'modeshift'
   hasPendingChanges: boolean
   sample: TelemetrySample | null
   telemetry: {
@@ -18,6 +21,7 @@ type SensitivityControlsProps = {
     timestamp: string
   }
   onModeChange: (mode: 'static' | 'accel') => void
+  onSensitivityViewChange: (view: 'base' | 'modeshift') => void
   onApply: () => void
   onCancel: () => void
   onMinThresholdChange: (value: string) => void
@@ -28,16 +32,21 @@ type SensitivityControlsProps = {
   onMaxSensYChange: (value: string) => void
   onStaticSensXChange: (value: string) => void
   onStaticSensYChange: (value: string) => void
+  modeshiftButton: string | null
+  onModeshiftButtonChange: (value: string) => void
 }
 
 export function SensitivityControls({
   sensitivity,
+  modeshiftSensitivity,
   isCalibrating,
   mode,
+  sensitivityView,
   hasPendingChanges,
   sample,
   telemetry,
   onModeChange,
+  onSensitivityViewChange,
   onApply,
   onCancel,
   onMinThresholdChange,
@@ -48,7 +57,12 @@ export function SensitivityControls({
   onMaxSensYChange,
   onStaticSensXChange,
   onStaticSensYChange,
+  modeshiftButton,
+  onModeshiftButtonChange,
 }: SensitivityControlsProps) {
+  const displaySensitivity =
+    sensitivityView === 'base' || !modeshiftButton ? sensitivity : modeshiftSensitivity ?? sensitivity
+
   return (
     <Card
       className="control-panel"
@@ -65,15 +79,45 @@ export function SensitivityControls({
           Acceleration Curve
         </button>
       </div>
+      <div className="sensitivity-shift-row">
+        <label>Mode shift button</label>
+        <select
+          value={modeshiftButton ?? ''}
+          onChange={(event) => onModeshiftButtonChange(event.target.value)}
+          data-testid="sensitivity-shift-select"
+        >
+          {MODESHIFT_BUTTON_OPTIONS.map(option => (
+            <option key={option.value || 'none'} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {modeshiftButton && (
+        <div className="mode-toggle secondary">
+          <button
+            className={`pill-tab ${sensitivityView === 'base' ? 'active' : ''}`}
+            onClick={() => onSensitivityViewChange('base')}
+          >
+            Base values
+          </button>
+          <button
+            className={`pill-tab ${sensitivityView === 'modeshift' ? 'active' : ''}`}
+            onClick={() => onSensitivityViewChange('modeshift')}
+          >
+            Mode shift
+          </button>
+        </div>
+      )}
       {mode === 'static' ? (
         <StaticSensForm
-          sensitivity={sensitivity}
+          sensitivity={displaySensitivity}
           onChangeX={onStaticSensXChange}
           onChangeY={onStaticSensYChange}
         />
       ) : (
         <AccelSensForm
-          sensitivity={sensitivity}
+          sensitivity={displaySensitivity}
           onMinThresholdChange={onMinThresholdChange}
           onMaxThresholdChange={onMaxThresholdChange}
           onMinSensXChange={onMinSensXChange}
