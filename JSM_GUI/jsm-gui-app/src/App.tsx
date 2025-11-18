@@ -290,7 +290,7 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
     }
     const profileName = options?.profileNameOverride ?? currentLibraryProfile ?? 'Unsaved profile'
     setStatusMessage(
-      result?.restarted ? `Applied ${profileName} (JSM restarted).` : `Applied ${profileName} without restart.`
+      result?.restarted ? `Applied ${profileName} (JSM restarted).` : `Applied ${profileName}.`
     )
     setAppliedConfig(sanitizedConfig)
     setTimeout(() => setStatusMessage(null), 3000)
