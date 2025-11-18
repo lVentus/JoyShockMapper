@@ -1,5 +1,6 @@
 import { SensitivityValues } from '../utils/keymap'
 import { Card } from './Card'
+import { SectionActions } from './SectionActions'
 
 const TICK_TIME_OPTIONS = [
   { value: '1', label: '500 Hz (1 ms)' },
@@ -16,6 +17,7 @@ const GYRO_SPACE_OPTIONS = [
 type GyroBehaviorControlsProps = {
   sensitivity: SensitivityValues
   isCalibrating: boolean
+  statusMessage?: string | null
   onInGameSensChange: (value: string) => void
   onRealWorldCalibrationChange: (value: string) => void
   onTickTimeChange: (value: string) => void
@@ -30,6 +32,7 @@ type GyroBehaviorControlsProps = {
 export function GyroBehaviorControls({
   sensitivity,
   isCalibrating,
+  statusMessage,
   onInGameSensChange,
   onRealWorldCalibrationChange,
   onTickTimeChange,
@@ -120,15 +123,14 @@ export function GyroBehaviorControls({
           </select>
         </label>
       </div>
-      <div className="control-actions">
-        <button className="secondary-btn" onClick={onApply}>Apply Changes</button>
-        {hasPendingChanges && (
-          <button className="secondary-btn" onClick={onCancel}>Cancel</button>
-        )}
-        {hasPendingChanges && (
-          <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
-        )}
-      </div>
+      <SectionActions
+        hasPendingChanges={hasPendingChanges}
+        statusMessage={statusMessage}
+        onApply={onApply}
+        onCancel={onCancel}
+        applyDisabled={isCalibrating}
+        className="control-actions"
+      />
     </Card>
   )
 }

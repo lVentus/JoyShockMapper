@@ -1,11 +1,13 @@
 import { Card } from './Card'
 import { SensitivityValues } from '../utils/keymap'
 import { TelemetryBanner } from './TelemetryBanner'
+import { SectionActions } from './SectionActions'
 
 type NoiseSteadyingControlsProps = {
   sensitivity: SensitivityValues
   isCalibrating: boolean
   hasPendingChanges: boolean
+  statusMessage?: string | null
   onApply: () => void
   onCancel: () => void
   onCutoffSpeedChange: (value: string) => void
@@ -22,6 +24,7 @@ export function NoiseSteadyingControls({
   sensitivity,
   isCalibrating,
   hasPendingChanges,
+  statusMessage,
   onApply,
   onCancel,
   onCutoffSpeedChange,
@@ -117,15 +120,14 @@ export function NoiseSteadyingControls({
           />
         </label>
       </div>
-      <div className="control-actions">
-        <button className="secondary-btn" onClick={onApply}>Apply Changes</button>
-        {hasPendingChanges && (
-          <button className="secondary-btn" onClick={onCancel}>Cancel</button>
-        )}
-        {hasPendingChanges && (
-          <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
-        )}
-      </div>
+      <SectionActions
+        hasPendingChanges={hasPendingChanges}
+        statusMessage={statusMessage}
+        onApply={onApply}
+        onCancel={onCancel}
+        applyDisabled={isCalibrating}
+        className="control-actions"
+      />
     </Card>
   )
 }

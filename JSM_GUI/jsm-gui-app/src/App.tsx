@@ -289,7 +289,9 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
     }
     const profileName = options?.profileNameOverride ?? currentLibraryProfile ?? 'Unsaved profile'
     setStatusMessage(
-      result?.restarted ? `Applied ${profileName} (JSM restarted).` : `Applied ${profileName}.`
+      result?.restarted
+        ? `Applied ${profileName} to JoyShockMapper (restarted).`
+        : `Applied ${profileName} to JoyShockMapper.`
     )
     setAppliedConfig(sanitizedConfig)
     setTimeout(() => setStatusMessage(null), 3000)
@@ -940,6 +942,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
           hasPendingChanges={hasPendingChanges}
           isCalibrating={isCalibrating}
           profileApplied={configText === appliedConfig}
+          statusMessage={statusMessage}
           onApplyProfile={applyConfig}
           applyDisabled={isCalibrating}
           onImportProfile={handleImportProfile}
@@ -958,6 +961,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
             <GyroBehaviorControls
               sensitivity={sensitivity}
               isCalibrating={isCalibrating}
+              statusMessage={statusMessage}
               onInGameSensChange={handleInGameSensChange}
               onRealWorldCalibrationChange={handleRealWorldCalibrationChange}
               onTickTimeChange={handleTickTimeChange}
@@ -973,6 +977,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
               sensitivity={sensitivity}
               modeshiftSensitivity={modeshiftSensitivity}
               isCalibrating={isCalibrating}
+              statusMessage={statusMessage}
               mode={currentMode}
               sensitivityView={sensitivityView}
               hasPendingChanges={hasPendingChanges}
@@ -1003,6 +1008,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
             <NoiseSteadyingControls
               sensitivity={sensitivity}
               isCalibrating={isCalibrating}
+              statusMessage={statusMessage}
               hasPendingChanges={hasPendingChanges}
               onApply={applyConfig}
               onCancel={handleCancel}
@@ -1017,9 +1023,11 @@ const handleDeleteLibraryProfile = async (name: string) => {
               value={configText}
               label={profileFileLabel}
               disabled={isCalibrating}
+              hasPendingChanges={hasPendingChanges}
+              statusMessage={statusMessage}
               onChange={setConfigText}
               onApply={applyConfig}
-              statusMessage={statusMessage}
+              onCancel={handleCancel}
             />
           </>
         )}
@@ -1030,6 +1038,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
               configText={configText}
               hasPendingChanges={hasPendingChanges}
               isCalibrating={isCalibrating}
+              statusMessage={statusMessage}
               onApply={applyConfig}
               onCancel={handleCancel}
               onBindingChange={handleFaceButtonBindingChange}
@@ -1058,9 +1067,11 @@ const handleDeleteLibraryProfile = async (name: string) => {
               value={configText}
               label={profileFileLabel}
               disabled={isCalibrating}
+              hasPendingChanges={hasPendingChanges}
+              statusMessage={statusMessage}
               onChange={setConfigText}
               onApply={applyConfig}
-              statusMessage={statusMessage}
+              onCancel={handleCancel}
             />
           </>
         )}
@@ -1071,6 +1082,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
               configText={configText}
               hasPendingChanges={hasPendingChanges}
               isCalibrating={isCalibrating}
+              statusMessage={statusMessage}
               onApply={applyConfig}
               onCancel={handleCancel}
               onBindingChange={handleFaceButtonBindingChange}
@@ -1103,9 +1115,11 @@ const handleDeleteLibraryProfile = async (name: string) => {
               value={configText}
               label={profileFileLabel}
               disabled={isCalibrating}
+              hasPendingChanges={hasPendingChanges}
+              statusMessage={statusMessage}
               onChange={setConfigText}
               onApply={applyConfig}
-              statusMessage={statusMessage}
+              onCancel={handleCancel}
             />
           </>
         )}

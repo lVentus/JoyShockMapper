@@ -11,11 +11,13 @@ import {
 import { buildModifierOptions, ControllerLayout, ModifierSelectOption } from '../utils/modifierOptions'
 import { BindingRow } from './BindingRow'
 import { KeymapSection } from './KeymapSection'
+import { SectionActions } from './SectionActions'
 
 type KeymapControlsProps = {
   configText: string
   hasPendingChanges: boolean
   isCalibrating: boolean
+  statusMessage?: string | null
   onApply: () => void
   onCancel: () => void
   onBindingChange: (button: string, slot: BindingSlot, value: string | null, options?: { modifier?: string }) => void
@@ -252,6 +254,7 @@ export function KeymapControls({
   configText,
   hasPendingChanges,
   isCalibrating,
+  statusMessage,
   onApply,
   onCancel,
   onBindingChange,
@@ -677,19 +680,14 @@ export function KeymapControls({
   }
 
   const renderSectionActions = () => (
-    <div className="keymap-section-actions">
-      <button className="secondary-btn" onClick={onApply} disabled={isCalibrating}>
-        Apply Changes
-      </button>
-      {hasPendingChanges && (
-        <>
-          <button className="secondary-btn" onClick={onCancel}>
-            Cancel
-          </button>
-          <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
-        </>
-      )}
-    </div>
+    <SectionActions
+      className="keymap-section-actions"
+      hasPendingChanges={hasPendingChanges}
+      statusMessage={statusMessage}
+      onApply={onApply}
+      onCancel={onCancel}
+      applyDisabled={isCalibrating}
+    />
   )
 
   return (

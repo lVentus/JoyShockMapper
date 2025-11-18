@@ -6,6 +6,7 @@ type ProfileManagerProps = {
   hasPendingChanges: boolean
   isCalibrating: boolean
   profileApplied: boolean
+  statusMessage?: string | null
   onImportProfile?: (fileName: string, content: string) => void
   libraryProfiles: string[]
   libraryLoading?: boolean
@@ -22,6 +23,7 @@ export function ProfileManager({
   hasPendingChanges,
   isCalibrating,
   profileApplied,
+  statusMessage,
   onImportProfile,
   libraryProfiles,
   libraryLoading = false,
@@ -43,7 +45,12 @@ export function ProfileManager({
     <Card className="profile-card" lockable locked={isCalibrating} lockMessage="Profiles locked while JSM calibrates">
       <h2>
         <span>Profiles</span>
-        {hasPendingChanges && <span className="profile-warning">Unsaved changes on current profile</span>}
+        {(hasPendingChanges || statusMessage) && (
+          <div className="profile-flags">
+            {statusMessage && <span className="profile-status">{statusMessage}</span>}
+            {hasPendingChanges && <span className="profile-warning">Unsaved changes on current profile</span>}
+          </div>
+        )}
       </h2>
 
       <section className="profile-library">

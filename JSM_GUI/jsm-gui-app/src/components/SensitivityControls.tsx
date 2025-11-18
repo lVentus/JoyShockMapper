@@ -5,11 +5,13 @@ import { AccelSensForm } from './AccelSensForm'
 import { Card } from './Card'
 import { TelemetrySample } from '../hooks/useTelemetry'
 import { CurvePreview } from './CurvePreview'
+import { SectionActions } from './SectionActions'
 
 type SensitivityControlsProps = {
   sensitivity: SensitivityValues
   modeshiftSensitivity?: SensitivityValues
   isCalibrating: boolean
+  statusMessage?: string | null
   mode: 'static' | 'accel'
   sensitivityView: 'base' | 'modeshift'
   hasPendingChanges: boolean
@@ -42,6 +44,7 @@ export function SensitivityControls({
   sensitivity,
   modeshiftSensitivity,
   isCalibrating,
+  statusMessage,
   mode,
   sensitivityView,
   hasPendingChanges,
@@ -134,15 +137,14 @@ export function SensitivityControls({
           onMaxSensYChange={onMaxSensYChange}
         />
       )}
-      <div className="control-actions">
-        <button className="secondary-btn" onClick={onApply}>Apply Changes</button>
-        {hasPendingChanges && (
-          <button className="secondary-btn" onClick={onCancel}>Cancel</button>
-        )}
-        {hasPendingChanges && (
-          <span className="pending-banner">Pending changes — click Apply to send to JoyShockMapper.</span>
-        )}
-      </div>
+      <SectionActions
+        hasPendingChanges={hasPendingChanges}
+        statusMessage={statusMessage}
+        onApply={onApply}
+        onCancel={onCancel}
+        applyDisabled={isCalibrating}
+        className="control-actions"
+      />
       <CurvePreview sensitivity={sensitivity} sample={sample} hasPendingChanges={hasPendingChanges} telemetry={telemetry} />
     </Card>
   )
