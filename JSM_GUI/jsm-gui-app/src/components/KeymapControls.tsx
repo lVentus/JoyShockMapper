@@ -321,8 +321,10 @@ export function KeymapControls({
   stickModeSettings,
   onStickModeChange,
   onRingModeChange,
+  adaptiveTriggerValue = '',
+  onAdaptiveTriggerChange,
 }: KeymapControlsProps) {
-  const layout: ControllerLayout = 'playstation'
+  const [layout, setLayout] = useState<ControllerLayout>('playstation')
   const [stickView, setStickView] = useState<'bindings' | 'modes'>('bindings')
   const [captureTarget, setCaptureTarget] = useState<CaptureTarget | null>(null)
   const [suppressKey, setSuppressKey] = useState<string | null>(null)
@@ -747,6 +749,16 @@ export function KeymapControls({
         <h2>
           {view === 'touchpad' ? 'Touchpad Controls' : view === 'sticks' ? 'Stick Bindings' : 'Keymap Controls'}
         </h2>
+        {view === 'full' && (
+          <div className="mode-toggle">
+            <button className={`pill-tab ${layout === 'playstation' ? 'active' : ''}`} onClick={() => setLayout('playstation')}>
+              PlayStation Labels
+            </button>
+            <button className={`pill-tab ${layout === 'xbox' ? 'active' : ''}`} onClick={() => setLayout('xbox')}>
+              Xbox Labels
+            </button>
+          </div>
+        )}
       </div>
 
       {showFullLayout && (
@@ -812,7 +824,23 @@ export function KeymapControls({
           {renderSectionActions()}
 
           <KeymapSection title="Triggers" description="Soft/full pulls and threshold toggles for L2/R2.">
-            <div className="keymap-grid">{TRIGGER_BUTTONS.map(renderButtonCard)}</div>
+            <div className="keymap-grid">
+              {TRIGGER_BUTTONS.map(renderButtonCard)}
+              <div className="adaptive-toggle" data-capture-ignore="true">
+                <label>
+                  Adaptive triggers (DualSense)
+                  <select
+                    className="app-select"
+                    value={adaptiveTriggerValue}
+                    onChange={(event) => onAdaptiveTriggerChange?.(event.target.value)}
+                    disabled={isCalibrating}
+                  >
+                    <option value="">Default (ON)</option>
+                    <option value="OFF">Off</option>
+                  </select>
+                </label>
+              </div>
+            </div>
           </KeymapSection>
           {renderSectionActions()}
         </>

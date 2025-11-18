@@ -1232,3 +1232,21 @@ input[type=number] {
   border-top: 1px solid #2a2a2a;
   padding-top: 1rem;
 }
+.adaptive-toggle {
+  margin-top: 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #131313;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.adaptive-toggle label {
+  font-weight: 600;
+  color: #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}

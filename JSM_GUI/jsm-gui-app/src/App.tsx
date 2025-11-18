@@ -887,6 +887,16 @@ const handleDeleteLibraryProfile = async (name: string) => {
     })
   }, [])
 
+  const handleAdaptiveTriggerChange = useCallback((value: string) => {
+    setConfigText(prev => {
+      const trimmed = value.trim().toUpperCase()
+      if (!trimmed || trimmed === 'ON') {
+        return removeKeymapEntry(prev, 'ADAPTIVE_TRIGGER')
+      }
+      return updateKeymapEntry(prev, 'ADAPTIVE_TRIGGER', [trimmed === 'OFF' ? 'OFF' : trimmed])
+    })
+  }, [])
+
   const handleRecalibrate = async () => {
     if (isCalibrating || recalibrating) return
     setRecalibrating(true)
@@ -975,6 +985,11 @@ const handleDeleteLibraryProfile = async (name: string) => {
         ring: getKeymapValue(configText, 'RIGHT_RING_MODE') ?? '',
       },
     }
+  }, [configText])
+  const adaptiveTriggerValue = useMemo(() => {
+    const value = getKeymapValue(configText, 'ADAPTIVE_TRIGGER')
+    if (!value) return ''
+    return value.trim().toUpperCase() === 'OFF' ? 'OFF' : 'ON'
   }, [configText])
 
   const baseMode: 'static' | 'accel' = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
@@ -1160,6 +1175,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onStickDeadzoneChange={handleStickDeadzoneChange}
               onStickModeChange={handleStickModeChange}
               onRingModeChange={handleRingModeChange}
+              adaptiveTriggerValue={adaptiveTriggerValue}
+              onAdaptiveTriggerChange={handleAdaptiveTriggerChange}
             />
             <ConfigEditor
               value={configText}
@@ -1217,6 +1234,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onStickDeadzoneChange={handleStickDeadzoneChange}
               onStickModeChange={handleStickModeChange}
               onRingModeChange={handleRingModeChange}
+              adaptiveTriggerValue={adaptiveTriggerValue}
+              onAdaptiveTriggerChange={handleAdaptiveTriggerChange}
             />
             <ConfigEditor
               value={configText}
