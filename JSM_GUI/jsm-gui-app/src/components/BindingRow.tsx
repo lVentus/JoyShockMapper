@@ -65,7 +65,7 @@ export function BindingRow({
       {modifierOptions && modifierOptions.length > 0 && (
         <div className="row-modifier-select" data-capture-ignore="true">
           <label>{modifierLabel ?? 'Modifier button'}</label>
-          <select value={modifierValue ?? ''} onChange={(event) => onModifierChange?.(event.target.value)}>
+          <select className="app-select" value={modifierValue ?? ''} onChange={(event) => onModifierChange?.(event.target.value)}>
             {modifierOptions.map(option => (
               <option key={option.value} value={option.value} disabled={option.disabled}>
                 {option.label}
@@ -77,7 +77,7 @@ export function BindingRow({
       {specialOptions && specialOptions.length > 0 && (
         <div className="row-special-select-wrapper" data-capture-ignore="true">
           <select
-            className="row-special-select"
+            className="row-special-select app-select"
             value={specialValue ?? ''}
             onChange={(event) => onSpecialChange?.(event.target.value)}
           >

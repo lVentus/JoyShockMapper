@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Card } from './Card'
 import {
   BindingSlot,
@@ -12,6 +12,7 @@ import { buildModifierOptions, ControllerLayout, ModifierSelectOption } from '..
 import { BindingRow } from './BindingRow'
 import { KeymapSection } from './KeymapSection'
 import { SectionActions } from './SectionActions'
+import { StickSettingsCard } from './StickSettingsCard'
 
 type KeymapControlsProps = {
   configText: string
@@ -52,6 +53,18 @@ type KeymapControlsProps = {
   onGridSizeChange?: (cols: number, rows: number) => void
   touchpadSensitivity?: number
   onTouchpadSensitivityChange?: (value: string) => void
+  stickDeadzoneSettings?: {
+    defaults: { inner: string; outer: string }
+    left: { inner: string; outer: string }
+    right: { inner: string; outer: string }
+  }
+  onStickDeadzoneChange?: (side: 'LEFT' | 'RIGHT', type: 'INNER' | 'OUTER', value: string) => void
+  stickModeSettings?: {
+    left: { mode: string; ring: string }
+    right: { mode: string; ring: string }
+  }
+  onStickModeChange?: (side: 'LEFT' | 'RIGHT', mode: string) => void
+  onRingModeChange?: (side: 'LEFT' | 'RIGHT', mode: string) => void
 }
 
 type ButtonDefinition = {
@@ -144,6 +157,8 @@ const SPECIAL_LABELS: Record<string, string> = {
 
 const EXTRA_BINDING_SLOTS: BindingSlot[] = ['hold', 'double', 'chord', 'simultaneous']
 const MODIFIER_SLOT_TYPES: BindingSlot[] = ['chord', 'simultaneous']
+const DEFAULT_STICK_DEADZONE_INNER = '0.15'
+const DEFAULT_STICK_DEADZONE_OUTER = '0.10'
 
 const getDefaultModifierForButton = (button: string, modifierOptions: ModifierSelectOption[]) => {
   const upper = button.toUpperCase()
@@ -301,6 +316,11 @@ export function KeymapControls({
   onGridSizeChange,
   touchpadSensitivity,
   onTouchpadSensitivityChange,
+  stickDeadzoneSettings,
+  onStickDeadzoneChange,
+  stickModeSettings,
+  onStickModeChange,
+  onRingModeChange,
 }: KeymapControlsProps) {
   const layout: ControllerLayout = 'playstation'
   const [stickView, setStickView] = useState<'bindings' | 'modes'>('bindings')
@@ -371,6 +391,14 @@ export function KeymapControls({
   const [captureLabel, setCaptureLabel] = useState<string>('')
   const showFullLayout = view === 'full'
   const showStickLayout = view === 'sticks'
+  const deadzoneDefaults = stickDeadzoneSettings?.defaults ?? {
+    inner: DEFAULT_STICK_DEADZONE_INNER,
+    outer: DEFAULT_STICK_DEADZONE_OUTER,
+  }
+  const leftDeadzoneValues = stickDeadzoneSettings?.left ?? { inner: '', outer: '' }
+  const rightDeadzoneValues = stickDeadzoneSettings?.right ?? { inner: '', outer: '' }
+  const leftStickModes = stickModeSettings?.left ?? { mode: '', ring: '' }
+  const rightStickModes = stickModeSettings?.right ?? { mode: '', ring: '' }
 
   useEffect(() => {
     if (!captureTarget) return
@@ -562,7 +590,7 @@ export function KeymapControls({
             }
             const isLegacyFileCall = Boolean(row.binding && /"\s*[^"]+\.(txt|cfg|ini)"/i.test(row.binding))
             return (
-              <>
+              <Fragment key={`${button.command}-${row.slot}-wrapper`}>
                 <BindingRow
                   key={`${button.command}-${row.slot}`}
                   label={headerLabel}
@@ -626,7 +654,7 @@ export function KeymapControls({
                     Legacy script detected — place the referenced file inside <code>JSM_GUI/bin/</code> or clear this row.
                   </div>
                 )}
-              </>
+              </Fragment>
             )
           })}
           {(() => {
@@ -641,6 +669,7 @@ export function KeymapControls({
             return (
               <div className="binding-row add-binding-row" data-capture-ignore="true">
                 <select
+                  className="app-select"
                   value=""
                   onChange={(event) => {
                     const selected = event.target.value as BindingSlot
@@ -822,10 +851,38 @@ export function KeymapControls({
               {renderSectionActions()}
             </>
           ) : (
-            <Card className="stick-modes-placeholder">
-              <h3>Coming soon</h3>
-              <p>Stick mode selection (AIM, Flick, Mouse area, etc.), deadzones, and ring settings will live here.</p>
-            </Card>
+              <>
+                <StickSettingsCard
+                  title="Left stick"
+                  innerValue={leftDeadzoneValues.inner}
+                  outerValue={leftDeadzoneValues.outer}
+                  defaultInner={deadzoneDefaults.inner}
+                  defaultOuter={deadzoneDefaults.outer}
+                  modeValue={leftStickModes.mode}
+                  ringValue={leftStickModes.ring}
+                  onModeChange={(value) => onStickModeChange?.('LEFT', value)}
+                  onRingChange={(value) => onRingModeChange?.('LEFT', value)}
+                  disabled={isCalibrating}
+                  onInnerChange={(value) => onStickDeadzoneChange?.('LEFT', 'INNER', value)}
+                  onOuterChange={(value) => onStickDeadzoneChange?.('LEFT', 'OUTER', value)}
+                />
+                {renderSectionActions()}
+                <StickSettingsCard
+                  title="Right stick"
+                  innerValue={rightDeadzoneValues.inner}
+                  outerValue={rightDeadzoneValues.outer}
+                  defaultInner={deadzoneDefaults.inner}
+                  defaultOuter={deadzoneDefaults.outer}
+                  modeValue={rightStickModes.mode}
+                  ringValue={rightStickModes.ring}
+                  onModeChange={(value) => onStickModeChange?.('RIGHT', value)}
+                  onRingChange={(value) => onRingModeChange?.('RIGHT', value)}
+                  disabled={isCalibrating}
+                  onInnerChange={(value) => onStickDeadzoneChange?.('RIGHT', 'INNER', value)}
+                  onOuterChange={(value) => onStickDeadzoneChange?.('RIGHT', 'OUTER', value)}
+                />
+              {renderSectionActions()}
+            </>
           )}
         </>
       )}
@@ -840,7 +897,7 @@ export function KeymapControls({
             <div className="touchpad-settings">
               <label>
                 Mode
-                <select value={touchpadMode} onChange={(event) => onTouchpadModeChange?.(event.target.value)}>
+                <select className="app-select" value={touchpadMode} onChange={(event) => onTouchpadModeChange?.(event.target.value)}>
                   <option value="">None selected</option>
                   <option value="GRID_AND_STICK">Grid and Stick</option>
                   <option value="MOUSE">Mouse</option>

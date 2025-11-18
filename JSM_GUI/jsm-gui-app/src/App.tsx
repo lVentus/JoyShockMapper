@@ -29,6 +29,20 @@ const formatNumber = (value: number | undefined, digits = 2) =>
 const TOGGLE_SPECIALS = ['GYRO_ON', 'GYRO_OFF'] as const
 const DEFAULT_HOLD_PRESS_TIME = 0.15
 const DEFAULT_WINDOW_SECONDS = 0.15
+const DEFAULT_STICK_DEADZONE_INNER = '0.15'
+const DEFAULT_STICK_DEADZONE_OUTER = '0.10'
+const STICK_MODES = [
+  'NO_MOUSE',
+  'AIM',
+  'FLICK',
+  'FLICK_ONLY',
+  'ROTATE_ONLY',
+  'MOUSE_RING',
+  'MOUSE_AREA',
+  'SCROLL_WHEEL',
+  'HYBRID_AIM',
+] as const
+const RING_MODES = ['INNER', 'OUTER'] as const
 const REQUIRED_HEADER_LINES = [
   { pattern: /^RESET_MAPPINGS\b/i, value: 'RESET_MAPPINGS' },
   { pattern: /^TELEMETRY_ENABLED\b/i, value: 'TELEMETRY_ENABLED = ON' },
@@ -828,6 +842,45 @@ const handleDeleteLibraryProfile = async (name: string) => {
     })
   }
 
+  const handleStickDeadzoneChange = useCallback(
+    (side: 'LEFT' | 'RIGHT', type: 'INNER' | 'OUTER', rawValue: string) => {
+      const key = `${side}_STICK_DEADZONE_${type}`
+      const trimmed = rawValue.trim()
+      setConfigText(prev => {
+        if (!trimmed) {
+          return removeKeymapEntry(prev, key)
+        }
+        const numeric = Number(trimmed)
+        if (Number.isNaN(numeric)) {
+          return prev
+        }
+        const clamped = Math.max(0, Math.min(1, numeric))
+        return updateKeymapEntry(prev, key, [clamped])
+      })
+    },
+    []
+  )
+
+  const handleStickModeChange = useCallback((side: 'LEFT' | 'RIGHT', mode: string) => {
+    const key = `${side}_STICK_MODE`
+    setConfigText(prev => {
+      if (!mode.trim()) {
+        return removeKeymapEntry(prev, key)
+      }
+      return updateKeymapEntry(prev, key, [mode.trim()])
+    })
+  }, [])
+
+  const handleRingModeChange = useCallback((side: 'LEFT' | 'RIGHT', mode: string) => {
+    const key = `${side}_RING_MODE`
+    setConfigText(prev => {
+      if (!mode.trim()) {
+        return removeKeymapEntry(prev, key)
+      }
+      return updateKeymapEntry(prev, key, [mode.trim()])
+    })
+  }, [])
+
   const handleRecalibrate = async () => {
     if (isCalibrating || recalibrating) return
     setRecalibrating(true)
@@ -887,6 +940,36 @@ const handleDeleteLibraryProfile = async (name: string) => {
     timestamp: formatTimestamp(sample?.ts),
   }
   const trackballDecayValue = useMemo(() => getKeymapValue(configText, 'TRACKBALL_DECAY') ?? '', [configText])
+  const stickDeadzoneDefaults = useMemo(() => {
+    return {
+      inner: getKeymapValue(configText, 'STICK_DEADZONE_INNER') ?? DEFAULT_STICK_DEADZONE_INNER,
+      outer: getKeymapValue(configText, 'STICK_DEADZONE_OUTER') ?? DEFAULT_STICK_DEADZONE_OUTER,
+    }
+  }, [configText])
+  const leftStickDeadzone = useMemo(() => {
+    return {
+      inner: getKeymapValue(configText, 'LEFT_STICK_DEADZONE_INNER') ?? '',
+      outer: getKeymapValue(configText, 'LEFT_STICK_DEADZONE_OUTER') ?? '',
+    }
+  }, [configText])
+  const rightStickDeadzone = useMemo(() => {
+    return {
+      inner: getKeymapValue(configText, 'RIGHT_STICK_DEADZONE_INNER') ?? '',
+      outer: getKeymapValue(configText, 'RIGHT_STICK_DEADZONE_OUTER') ?? '',
+    }
+  }, [configText])
+  const stickModes = useMemo(() => {
+    return {
+      left: {
+        mode: getKeymapValue(configText, 'LEFT_STICK_MODE') ?? '',
+        ring: getKeymapValue(configText, 'LEFT_RING_MODE') ?? '',
+      },
+      right: {
+        mode: getKeymapValue(configText, 'RIGHT_STICK_MODE') ?? '',
+        ring: getKeymapValue(configText, 'RIGHT_RING_MODE') ?? '',
+      },
+    }
+  }, [configText])
 
   const baseMode: 'static' | 'accel' = sensitivity.gyroSensX !== undefined ? 'static' : 'accel'
   const modeshiftMode: 'static' | 'accel' = modeshiftSensitivity?.gyroSensX !== undefined ? 'static' : 'accel'
@@ -1062,6 +1145,15 @@ const handleDeleteLibraryProfile = async (name: string) => {
               touchpadMode={touchpadModeValue}
               gridColumns={gridSizeValue.columns}
               gridRows={gridSizeValue.rows}
+              stickDeadzoneSettings={{
+                defaults: stickDeadzoneDefaults,
+                left: leftStickDeadzone,
+                right: rightStickDeadzone,
+              }}
+              stickModeSettings={stickModes}
+              onStickDeadzoneChange={handleStickDeadzoneChange}
+              onStickModeChange={handleStickModeChange}
+              onRingModeChange={handleRingModeChange}
             />
             <ConfigEditor
               value={configText}
@@ -1110,6 +1202,15 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onGridSizeChange={handleGridSizeChange}
               touchpadSensitivity={touchpadSensitivityValue}
               onTouchpadSensitivityChange={handleTouchpadSensitivityChange}
+              stickDeadzoneSettings={{
+                defaults: stickDeadzoneDefaults,
+                left: leftStickDeadzone,
+                right: rightStickDeadzone,
+              }}
+              stickModeSettings={stickModes}
+              onStickDeadzoneChange={handleStickDeadzoneChange}
+              onStickModeChange={handleStickModeChange}
+              onRingModeChange={handleRingModeChange}
             />
             <ConfigEditor
               value={configText}
@@ -1154,6 +1255,12 @@ const handleDeleteLibraryProfile = async (name: string) => {
               touchpadMode={touchpadModeValue}
               gridColumns={gridSizeValue.columns}
               gridRows={gridSizeValue.rows}
+              stickDeadzoneSettings={{
+                defaults: stickDeadzoneDefaults,
+                left: leftStickDeadzone,
+                right: rightStickDeadzone,
+              }}
+              onStickDeadzoneChange={handleStickDeadzoneChange}
             />
             <ConfigEditor
               value={configText}
