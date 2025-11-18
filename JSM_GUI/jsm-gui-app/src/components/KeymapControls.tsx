@@ -51,8 +51,6 @@ type KeymapControlsProps = {
   onGridSizeChange?: (cols: number, rows: number) => void
   touchpadSensitivity?: number
   onTouchpadSensitivityChange?: (value: string) => void
-  touchpadDualStageMode?: string
-  onTouchpadDualStageModeChange?: (value: string) => void
 }
 
 type ButtonDefinition = {
@@ -368,25 +366,27 @@ export function KeymapControls({
   triggerThreshold,
   onTriggerThresholdChange,
   view = 'full',
-  touchpadMode: touchpadModeProp = 'GRID_AND_STICK',
+  touchpadMode: touchpadModeProp = '',
   onTouchpadModeChange,
   gridColumns = 2,
   gridRows = 2,
   onGridSizeChange,
   touchpadSensitivity,
   onTouchpadSensitivityChange,
-  touchpadDualStageMode,
-  onTouchpadDualStageModeChange,
 }: KeymapControlsProps) {
   const [layout, setLayout] = useState<ControllerLayout>('playstation')
   const [captureTarget, setCaptureTarget] = useState<CaptureTarget | null>(null)
   const [suppressKey, setSuppressKey] = useState<string | null>(null)
   const [manualRows, setManualRows] = useState<Record<string, ManualRowState>>({})
-  const touchpadMode = useMemo(() => touchpadModeProp?.toUpperCase() ?? 'GRID_AND_STICK', [touchpadModeProp])
+  const touchpadMode = useMemo(() => {
+    const upper = touchpadModeProp?.toUpperCase()
+    if (upper === 'GRID_AND_STICK' || upper === 'MOUSE') return upper
+    return ''
+  }, [touchpadModeProp])
   const gridActive = touchpadMode === 'GRID_AND_STICK'
   const clampedGridCols = Math.max(1, Math.min(5, gridColumns || 1))
   const clampedGridRows = Math.max(1, Math.min(5, gridRows || 1))
-  const clampedGridCells = Math.min(25, clampedGridCols * clampedGridRows)
+  const clampedGridCells = touchpadMode === 'GRID_AND_STICK' ? Math.min(25, clampedGridCols * clampedGridRows) : 0
   const configuredGridButtons = gridActive ? clampedGridCells : 0
   const modifierOptions = useMemo(() => {
     return buildModifierOptions(layout, gridActive, configuredGridButtons)
@@ -889,6 +889,7 @@ export function KeymapControls({
               <label>
                 Mode
                 <select value={touchpadMode} onChange={(event) => onTouchpadModeChange?.(event.target.value)}>
+                  <option value="">None selected</option>
                   <option value="GRID_AND_STICK">Grid and Stick</option>
                   <option value="MOUSE">Mouse</option>
                 </select>

@@ -191,20 +191,17 @@ const simPressWindowIsCustom = simPressWindowState.isCustom
     }
     return 0
   }, [configText])
-  const touchpadModeValue = (getKeymapValue(configText, 'TOUCHPAD_MODE') ?? 'GRID_AND_STICK').toUpperCase()
+  const touchpadModeValue = (getKeymapValue(configText, 'TOUCHPAD_MODE') ?? '').toUpperCase()
+  const gridSizeRaw = getKeymapValue(configText, 'GRID_SIZE')
   const gridSizeValue = useMemo(() => {
-    const raw = getKeymapValue(configText, 'GRID_SIZE')
-    if (raw) {
-      const [colToken, rowToken] = raw.split(/\s+/)
-      const cols = Number.parseInt(colToken ?? '2', 10)
-      const rows = Number.parseInt(rowToken ?? '1', 10)
-      return {
-        columns: Number.isFinite(cols) ? cols : 2,
-        rows: Number.isFinite(rows) ? rows : 1,
-      }
+    if (gridSizeRaw) {
+      const tokens = gridSizeRaw.split(/\s+/).map(token => Number(token))
+      const cols = Number.isFinite(tokens[0]) ? tokens[0] : 2
+      const rows = Number.isFinite(tokens[1]) ? tokens[1] : 1
+      return { columns: cols, rows: rows }
     }
     return { columns: 2, rows: 1 }
-  }, [configText])
+  }, [gridSizeRaw])
   const touchpadSensitivityValue = useMemo(() => {
     const raw = getKeymapValue(configText, 'TOUCHPAD_SENS')
     if (!raw) return undefined
@@ -475,9 +472,21 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
   }
 
   const handleTouchpadModeChange = useCallback((value: string) => {
-    const sanitized = value?.toUpperCase() === 'MOUSE' ? 'MOUSE' : 'GRID_AND_STICK'
-    setConfigText(prev => updateKeymapEntry(prev, 'TOUCHPAD_MODE', [sanitized]))
-  }, [])
+    const upper = value?.toUpperCase() ?? ''
+    setConfigText(prev => {
+      let next = prev
+      if (upper === '') {
+        next = removeKeymapEntry(next, 'TOUCHPAD_MODE')
+        return next
+      }
+      const sanitized = upper === 'MOUSE' ? 'MOUSE' : 'GRID_AND_STICK'
+      next = updateKeymapEntry(next, 'TOUCHPAD_MODE', [sanitized])
+      if (sanitized === 'GRID_AND_STICK' && !gridSizeRaw) {
+        next = updateKeymapEntry(next, 'GRID_SIZE', [gridSizeValue.columns, gridSizeValue.rows])
+      }
+      return next
+    })
+  }, [gridSizeRaw, gridSizeValue.columns, gridSizeValue.rows])
 
   const handleGridSizeChange = useCallback((columns: number, rows: number) => {
     const cols = Math.max(1, Math.min(5, Math.round(columns)))
