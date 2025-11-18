@@ -479,7 +479,13 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
       const parsed = parseSensitivityValues(prev, activeSensitivityPrefix ? { prefix: activeSensitivityPrefix } : undefined)
       const current: [number, number] = [
         parsed.gyroSensX ?? parsed.minSensX ?? parsed.maxSensX ?? 1,
-        parsed.gyroSensY ?? parsed.minSensY ?? parsed.maxSensY ?? parsed.gyroSensX ?? 1,
+        parsed.gyroSensY ??
+          parsed.minSensY ??
+          parsed.minSensX ??
+          parsed.maxSensY ??
+          parsed.maxSensX ??
+          parsed.gyroSensX ??
+          1,
       ]
       current[index] = next
       return updateKeymapEntry(prev, resolveSensitivityKey('GYRO_SENS'), current)
@@ -699,7 +705,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
         return prev
       }
       const defaultX = values.minSensX ?? values.maxSensX ?? 1
-      const defaultY = values.minSensY ?? values.maxSensY ?? defaultX
+      const defaultY = values.minSensY ?? values.minSensX ?? values.maxSensY ?? values.maxSensX ?? defaultX
       let next = updateKeymapEntry(prev, prefixedKey('GYRO_SENS', prefix), [defaultX, defaultY])
       ;['MIN_GYRO_SENS', 'MAX_GYRO_SENS', 'MIN_GYRO_THRESHOLD', 'MAX_GYRO_THRESHOLD'].forEach(key => {
         next = removeKeymapEntry(next, prefixedKey(key, prefix))

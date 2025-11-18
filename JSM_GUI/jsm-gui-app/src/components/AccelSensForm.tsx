@@ -19,28 +19,36 @@ export function AccelSensForm({
   onMaxSensXChange,
   onMaxSensYChange,
 }: AccelSensFormProps) {
+  const minSensXValue = sensitivity.minSensX ?? ''
+  const minSensYValue = sensitivity.minSensY ?? sensitivity.minSensX ?? ''
+  const maxSensXValue = sensitivity.maxSensX ?? ''
+  const maxSensYValue = sensitivity.maxSensY ?? sensitivity.maxSensX ?? ''
+  const minSensXRange = sensitivity.minSensX ?? 0
+  const minSensYRange = sensitivity.minSensY ?? sensitivity.minSensX ?? 0
+  const maxSensXRange = sensitivity.maxSensX ?? 0
+  const maxSensYRange = sensitivity.maxSensY ?? sensitivity.maxSensX ?? 0
   return (
     <>
       <div className="flex-inputs">
         <label>
           Min Sens (X)
-          <input type="number" step="0.1" value={sensitivity.minSensX ?? ''} onChange={(e) => onMinSensXChange(e.target.value)} />
-          <input type="range" min="0" max="30" step="0.1" value={sensitivity.minSensX ?? 0} onChange={(e) => onMinSensXChange(e.target.value)} />
+          <input type="number" step="0.1" value={minSensXValue} onChange={(e) => onMinSensXChange(e.target.value)} />
+          <input type="range" min="0" max="30" step="0.1" value={minSensXRange} onChange={(e) => onMinSensXChange(e.target.value)} />
         </label>
         <label>
           Min Sens (Y)
-          <input type="number" step="0.1" value={sensitivity.minSensY ?? ''} onChange={(e) => onMinSensYChange(e.target.value)} />
-          <input type="range" min="0" max="30" step="0.1" value={sensitivity.minSensY ?? 0} onChange={(e) => onMinSensYChange(e.target.value)} />
+          <input type="number" step="0.1" value={minSensYValue} onChange={(e) => onMinSensYChange(e.target.value)} />
+          <input type="range" min="0" max="30" step="0.1" value={minSensYRange} onChange={(e) => onMinSensYChange(e.target.value)} />
         </label>
         <label>
           Max Sens (X)
-          <input type="number" step="0.1" value={sensitivity.maxSensX ?? ''} onChange={(e) => onMaxSensXChange(e.target.value)} />
-          <input type="range" min="0" max="30" step="0.1" value={sensitivity.maxSensX ?? 0} onChange={(e) => onMaxSensXChange(e.target.value)} />
+          <input type="number" step="0.1" value={maxSensXValue} onChange={(e) => onMaxSensXChange(e.target.value)} />
+          <input type="range" min="0" max="30" step="0.1" value={maxSensXRange} onChange={(e) => onMaxSensXChange(e.target.value)} />
         </label>
         <label>
           Max Sens (Y)
-          <input type="number" step="0.1" value={sensitivity.maxSensY ?? ''} onChange={(e) => onMaxSensYChange(e.target.value)} />
-          <input type="range" min="0" max="30" step="0.1" value={sensitivity.maxSensY ?? 0} onChange={(e) => onMaxSensYChange(e.target.value)} />
+          <input type="number" step="0.1" value={maxSensYValue} onChange={(e) => onMaxSensYChange(e.target.value)} />
+          <input type="range" min="0" max="30" step="0.1" value={maxSensYRange} onChange={(e) => onMaxSensYChange(e.target.value)} />
         </label>
       </div>
       <div className="flex-inputs">
