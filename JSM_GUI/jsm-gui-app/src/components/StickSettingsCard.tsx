@@ -55,7 +55,6 @@ export function StickSettingsCard({
           <option value="FLICK">Flick</option>
           <option value="FLICK_ONLY">Flick Only</option>
           <option value="ROTATE_ONLY">Rotate Only</option>
-          <option value="MOUSE_RING">Mouse Ring</option>
           <option value="MOUSE_AREA">Mouse Area</option>
           <option value="SCROLL_WHEEL">Scroll Wheel</option>
           <option value="HYBRID_AIM">Hybrid Aim</option>

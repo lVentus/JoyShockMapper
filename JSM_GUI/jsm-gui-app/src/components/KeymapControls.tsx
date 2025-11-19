@@ -79,6 +79,24 @@ type KeymapControlsProps = {
     onAccelerationRateChange: (value: string) => void
     onAccelerationCapChange: (value: string) => void
   }
+  stickFlickSettings?: {
+    flickTime: string
+    flickTimeExponent: string
+    snapMode: string
+    snapStrength: string
+    deadzoneAngle: string
+  }
+  stickFlickHandlers?: {
+    onFlickTimeChange: (value: string) => void
+    onFlickTimeExponentChange: (value: string) => void
+    onSnapModeChange: (value: string) => void
+    onSnapStrengthChange: (value: string) => void
+    onDeadzoneAngleChange: (value: string) => void
+  }
+  mouseRingRadius?: string
+  onMouseRingRadiusChange?: (value: string) => void
+  scrollSens?: string
+  onScrollSensChange?: (value: string) => void
   stickModeShiftAssignments?: Record<string, { target: 'LEFT' | 'RIGHT'; mode: string }[]>
   onStickModeShiftChange?: (button: string, target: 'LEFT' | 'RIGHT', mode?: string) => void
 }
@@ -151,7 +169,6 @@ const STICK_MODE_VALUES = [
   'FLICK',
   'FLICK_ONLY',
   'ROTATE_ONLY',
-  'MOUSE_RING',
   'MOUSE_AREA',
   'SCROLL_WHEEL',
   'HYBRID_AIM',
@@ -165,7 +182,6 @@ const STICK_MODE_LABELS: Record<string, string> = {
   FLICK: 'Flick Stick',
   FLICK_ONLY: 'Flick Only',
   ROTATE_ONLY: 'Rotate Only',
-  MOUSE_RING: 'Mouse Ring',
   MOUSE_AREA: 'Mouse Area',
   SCROLL_WHEEL: 'Scroll Wheel',
   HYBRID_AIM: 'Hybrid Aim',
@@ -275,6 +291,103 @@ const StickAimSettings = ({ values, handlers, disabled }: StickAimSettingsProps)
             value={accelCapValue}
             onChange={(event) => handlers.onAccelerationCapChange(event.target.value)}
             placeholder={formatDefault(STICK_AIM_DEFAULTS.accelerationCap)}
+            disabled={disabled}
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
+
+type StickFlickSettingsProps = {
+  values: NonNullable<KeymapControlsProps['stickFlickSettings']>
+  handlers: NonNullable<KeymapControlsProps['stickFlickHandlers']>
+  disabled?: boolean
+}
+
+const StickFlickSettings = ({ values, handlers, disabled }: StickFlickSettingsProps) => {
+  const snapMode = values.snapMode || ''
+  const formatDefault = (value: string) => `Default (${value})`
+  return (
+    <div className="stick-flick-settings" data-capture-ignore="true">
+      <small>Flick stick timing and snapping controls.</small>
+      <div className="stick-aim-grid">
+        <label>
+          Flick time (seconds)
+          <input
+            type="number"
+            step="0.01"
+            value={values.flickTime}
+            onChange={(event) => handlers.onFlickTimeChange(event.target.value)}
+            placeholder={formatDefault('0.1')}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Flick time exponent
+          <input
+            type="number"
+            step="0.1"
+            value={values.flickTimeExponent}
+            onChange={(event) => handlers.onFlickTimeExponentChange(event.target.value)}
+            placeholder={formatDefault('0.0')}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Snap mode
+          <select
+            className="app-select"
+            value={snapMode}
+            onChange={(event) => handlers.onSnapModeChange(event.target.value)}
+            disabled={disabled}
+          >
+            <option value="">Default (NONE)</option>
+            <option value="4">Snap to 4 directions</option>
+            <option value="8">Snap to 8 directions</option>
+          </select>
+        </label>
+        <label>
+          Snap strength
+          <input
+            type="number"
+            step="0.05"
+            min="0"
+            max="1"
+            value={values.snapStrength}
+            onChange={(event) => handlers.onSnapStrengthChange(event.target.value)}
+            placeholder={formatDefault('1.0')}
+            disabled={disabled}
+          />
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={Number(values.snapStrength) || 0}
+            onChange={(event) => handlers.onSnapStrengthChange(event.target.value)}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Forward deadzone angle
+          <input
+            type="number"
+            step="1"
+            min="0"
+            max="180"
+            value={values.deadzoneAngle}
+            onChange={(event) => handlers.onDeadzoneAngleChange(event.target.value)}
+            placeholder={formatDefault('0°')}
+            disabled={disabled}
+          />
+          <input
+            type="range"
+            min="0"
+            max="180"
+            step="1"
+            value={Number(values.deadzoneAngle) || 0}
+            onChange={(event) => handlers.onDeadzoneAngleChange(event.target.value)}
             disabled={disabled}
           />
         </label>
@@ -479,6 +592,12 @@ export function KeymapControls({
   onStickModeShiftChange,
   stickAimSettings,
   stickAimHandlers,
+  stickFlickSettings,
+  stickFlickHandlers,
+  mouseRingRadius,
+  onMouseRingRadiusChange,
+  scrollSens,
+  onScrollSensChange,
   adaptiveTriggerValue = '',
   onAdaptiveTriggerChange,
 }: KeymapControlsProps) {
@@ -1208,11 +1327,58 @@ export function KeymapControls({
                   disabled={isCalibrating}
                   onInnerChange={(value) => onStickDeadzoneChange?.('LEFT', 'INNER', value)}
                   onOuterChange={(value) => onStickDeadzoneChange?.('LEFT', 'OUTER', value)}
-                  modeExtras={
-                    stickModeSettings?.left.mode === 'AIM' && stickAimSettings && stickAimHandlers ? (
-                      <StickAimSettings values={stickAimSettings} handlers={stickAimHandlers} disabled={isCalibrating} />
-                    ) : null
-                  }
+                  modeExtras={(() => {
+                    const leftMode = stickModeSettings?.left.mode ?? ''
+                    if ((leftMode === 'AIM' || leftMode === 'HYBRID_AIM') && stickAimSettings && stickAimHandlers) {
+                      return <StickAimSettings values={stickAimSettings} handlers={stickAimHandlers} disabled={isCalibrating} />
+                    }
+                    if ((leftMode === 'FLICK' || leftMode === 'FLICK_ONLY' || leftMode === 'ROTATE_ONLY') && stickFlickSettings && stickFlickHandlers) {
+                      return <StickFlickSettings values={stickFlickSettings} handlers={stickFlickHandlers} disabled={isCalibrating} />
+                    }
+                    if (leftMode === 'MOUSE_AREA' && mouseRingRadius !== undefined && onMouseRingRadiusChange) {
+                      return (
+                        <div className="stick-flick-settings" data-capture-ignore="true">
+                          <small>Mouse area radius (pixels from center).</small>
+                          <div className="stick-aim-grid">
+                            <label>
+                              Mouse area radius
+                              <input
+                                type="number"
+                                min="0"
+                                step="10"
+                                value={mouseRingRadius}
+                                onChange={(event) => onMouseRingRadiusChange(event.target.value)}
+                                placeholder="Enter radius"
+                                disabled={isCalibrating}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      )
+                    }
+                    if (leftMode === 'SCROLL_WHEEL' && scrollSens !== undefined && onScrollSensChange) {
+                      return (
+                        <div className="stick-flick-settings" data-capture-ignore="true">
+                          <small>Scroll wheel sensitivity (degrees per pulse). Higher values require larger rotations.</small>
+                          <div className="stick-aim-grid">
+                            <label>
+                              Scroll sensitivity
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={scrollSens}
+                                onChange={(event) => onScrollSensChange(event.target.value)}
+                                placeholder="Enter degrees"
+                                disabled={isCalibrating}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
                 />
                 {renderSectionActions()}
                 <StickSettingsCard
@@ -1228,11 +1394,58 @@ export function KeymapControls({
                   disabled={isCalibrating}
                   onInnerChange={(value) => onStickDeadzoneChange?.('RIGHT', 'INNER', value)}
                   onOuterChange={(value) => onStickDeadzoneChange?.('RIGHT', 'OUTER', value)}
-                  modeExtras={
-                    stickModeSettings?.right.mode === 'AIM' && stickAimSettings && stickAimHandlers ? (
-                      <StickAimSettings values={stickAimSettings} handlers={stickAimHandlers} disabled={isCalibrating} />
-                    ) : null
-                  }
+                  modeExtras={(() => {
+                    const rightMode = stickModeSettings?.right.mode ?? ''
+                    if (rightMode === 'AIM' && stickAimSettings && stickAimHandlers) {
+                      return <StickAimSettings values={stickAimSettings} handlers={stickAimHandlers} disabled={isCalibrating} />
+                    }
+                    if ((rightMode === 'FLICK' || rightMode === 'FLICK_ONLY' || rightMode === 'ROTATE_ONLY') && stickFlickSettings && stickFlickHandlers) {
+                      return <StickFlickSettings values={stickFlickSettings} handlers={stickFlickHandlers} disabled={isCalibrating} />
+                    }
+                    if (rightMode === 'MOUSE_AREA' && mouseRingRadius !== undefined && onMouseRingRadiusChange) {
+                      return (
+                        <div className="stick-flick-settings" data-capture-ignore="true">
+                          <small>Mouse area radius (pixels from center).</small>
+                          <div className="stick-aim-grid">
+                            <label>
+                              Mouse area radius
+                              <input
+                                type="number"
+                                min="0"
+                                step="10"
+                                value={mouseRingRadius}
+                                onChange={(event) => onMouseRingRadiusChange(event.target.value)}
+                                placeholder="Enter radius"
+                                disabled={isCalibrating}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      )
+                    }
+                    if (rightMode === 'SCROLL_WHEEL' && scrollSens !== undefined && onScrollSensChange) {
+                      return (
+                        <div className="stick-flick-settings" data-capture-ignore="true">
+                          <small>Scroll wheel sensitivity (degrees per pulse). Higher values require larger rotations.</small>
+                          <div className="stick-aim-grid">
+                            <label>
+                              Scroll sensitivity
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={scrollSens}
+                                onChange={(event) => onScrollSensChange(event.target.value)}
+                                placeholder="Enter degrees"
+                                disabled={isCalibrating}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
                 />
               {renderSectionActions()}
             </>

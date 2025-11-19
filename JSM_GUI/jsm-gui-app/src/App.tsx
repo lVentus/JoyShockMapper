@@ -989,6 +989,88 @@ const handleDeleteLibraryProfile = async (name: string) => {
     ]
   )
 
+  const stickFlickSettings = useMemo(() => {
+    const getRaw = (key: string) => getKeymapValue(configText, key) ?? ''
+    const formatNumber = (raw: string, fallback: string) => {
+      if (!raw.trim()) return ''
+      const parsed = Number(raw)
+      return Number.isFinite(parsed) ? raw.trim() : fallback
+    }
+    return {
+      flickTime: formatNumber(getRaw('FLICK_TIME'), ''),
+      flickTimeExponent: formatNumber(getRaw('FLICK_TIME_EXPONENT'), ''),
+      snapMode: getRaw('FLICK_SNAP_MODE').toUpperCase(),
+      snapStrength: formatNumber(getRaw('FLICK_SNAP_STRENGTH'), ''),
+      deadzoneAngle: formatNumber(getRaw('FLICK_DEADZONE_ANGLE'), ''),
+    }
+  }, [configText])
+
+  const handleFlickSettingChange = useCallback((key: string, value: string) => {
+    setConfigText(prev => {
+      const trimmed = value.trim()
+      if (!trimmed) {
+        return removeKeymapEntry(prev, key)
+      }
+      if (key === 'FLICK_SNAP_MODE') {
+        return updateKeymapEntry(prev, key, [trimmed.toUpperCase()])
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed)) return prev
+      return updateKeymapEntry(prev, key, [parsed])
+    })
+  }, [])
+
+  const stickFlickHandlers = useMemo(
+    () => ({
+      onFlickTimeChange: (value: string) => handleFlickSettingChange('FLICK_TIME', value),
+      onFlickTimeExponentChange: (value: string) => handleFlickSettingChange('FLICK_TIME_EXPONENT', value),
+      onSnapModeChange: (value: string) => handleFlickSettingChange('FLICK_SNAP_MODE', value),
+      onSnapStrengthChange: (value: string) => handleFlickSettingChange('FLICK_SNAP_STRENGTH', value),
+      onDeadzoneAngleChange: (value: string) => handleFlickSettingChange('FLICK_DEADZONE_ANGLE', value),
+    }),
+    [handleFlickSettingChange]
+  )
+
+  const mouseRingRadiusValue = useMemo(() => {
+    const raw = getKeymapValue(configText, 'MOUSE_RING_RADIUS')
+    if (!raw) return ''
+    return raw.trim()
+  }, [configText])
+
+  const handleMouseRingRadiusChange = useCallback((value: string) => {
+    const trimmed = value.trim()
+    setConfigText(prev => {
+      if (!trimmed) {
+        return removeKeymapEntry(prev, 'MOUSE_RING_RADIUS')
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        return prev
+      }
+      return updateKeymapEntry(prev, 'MOUSE_RING_RADIUS', [parsed])
+    })
+  }, [])
+
+  const scrollSensValue = useMemo(() => {
+    const raw = getKeymapValue(configText, 'SCROLL_SENS')
+    if (!raw) return ''
+    return raw.trim()
+  }, [configText])
+
+  const handleScrollSensChange = useCallback((value: string) => {
+    const trimmed = value.trim()
+    setConfigText(prev => {
+      if (!trimmed) {
+        return removeKeymapEntry(prev, 'SCROLL_SENS')
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        return prev
+      }
+      return updateKeymapEntry(prev, 'SCROLL_SENS', [parsed])
+    })
+  }, [])
+
   const handleRecalibrate = async () => {
     if (isCalibrating || recalibrating) return
     setRecalibrating(true)
@@ -1315,6 +1397,12 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onAdaptiveTriggerChange={handleAdaptiveTriggerChange}
               stickAimSettings={stickAimSettings}
               stickAimHandlers={stickAimHandlers}
+              stickFlickSettings={stickFlickSettings}
+              stickFlickHandlers={stickFlickHandlers}
+              mouseRingRadius={mouseRingRadiusValue}
+              onMouseRingRadiusChange={handleMouseRingRadiusChange}
+              scrollSens={scrollSensValue}
+              onScrollSensChange={handleScrollSensChange}
             />
             <ConfigEditor
               value={configText}
@@ -1433,11 +1521,14 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onRingModeChange={handleRingModeChange}
               stickModeShiftAssignments={stickModeShiftAssignments}
               onStickModeShiftChange={handleStickModeShiftChange}
-              stickModeSettings={stickModes}
-              onStickModeChange={handleStickModeChange}
-              onRingModeChange={handleRingModeChange}
               stickAimSettings={stickAimSettings}
               stickAimHandlers={stickAimHandlers}
+              stickFlickSettings={stickFlickSettings}
+              stickFlickHandlers={stickFlickHandlers}
+              scrollSens={scrollSensValue}
+              onScrollSensChange={handleScrollSensChange}
+              mouseRingRadius={mouseRingRadiusValue}
+              onMouseRingRadiusChange={handleMouseRingRadiusChange}
             />
             <ConfigEditor
               value={configText}

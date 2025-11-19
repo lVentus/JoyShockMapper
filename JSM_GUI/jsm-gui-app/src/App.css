@@ -257,6 +257,22 @@ body {
   color: #ddd;
 }
 
+.stick-flick-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stick-flick-settings small {
+  color: #aaa;
+}
+
+.stick-flick-settings .stick-aim-grid label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #ddd;
+}
+
 .stick-shift-rows {
   display: flex;
   flex-direction: column;
