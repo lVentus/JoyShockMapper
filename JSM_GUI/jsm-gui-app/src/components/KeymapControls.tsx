@@ -65,6 +65,20 @@ type KeymapControlsProps = {
   }
   onStickModeChange?: (side: 'LEFT' | 'RIGHT', mode: string) => void
   onRingModeChange?: (side: 'LEFT' | 'RIGHT', mode: string) => void
+  stickAimSettings?: {
+    displaySensX: string
+    displaySensY: string
+    power: string
+    accelerationRate: string
+    accelerationCap: string
+  }
+  stickAimHandlers?: {
+    onSensXChange: (value: string) => void
+    onSensYChange: (value: string) => void
+    onPowerChange: (value: string) => void
+    onAccelerationRateChange: (value: string) => void
+    onAccelerationCapChange: (value: string) => void
+  }
 }
 
 type ButtonDefinition = {
@@ -128,6 +142,90 @@ const RIGHT_STICK_BUTTONS: ButtonDefinition[] = [
   { command: 'R3', description: 'Right stick click', playstation: 'R3', xbox: 'RS Click' },
   { command: 'RRING', description: 'Right stick ring binding', playstation: 'R-Ring', xbox: 'R-Ring' },
 ]
+
+const STICK_AIM_DEFAULTS = {
+  sens: '360',
+  power: '2',
+  accelerationRate: '0',
+  accelerationCap: '1000000',
+}
+
+type StickAimSettingsProps = {
+  values: NonNullable<KeymapControlsProps['stickAimSettings']>
+  handlers: NonNullable<KeymapControlsProps['stickAimHandlers']>
+  disabled?: boolean
+}
+
+const StickAimSettings = ({ values, handlers, disabled }: StickAimSettingsProps) => {
+  const sensXValue = values.displaySensX
+  const sensYValue = values.displaySensY
+  const powerValue = values.power ?? ''
+  const accelRateValue = values.accelerationRate ?? ''
+  const accelCapValue = values.accelerationCap ?? ''
+  const formatDefault = (value: string) => `Default (${value})`
+  return (
+    <div className="stick-aim-settings" data-capture-ignore="true">
+      <small>Applies to STICK_SENS / POWER / ACCEL settings when Aim mode is active.</small>
+      <div className="stick-aim-grid">
+        <label>
+          Stick sensitivity (horizontal)
+          <input
+            type="number"
+            step="1"
+            value={sensXValue}
+            onChange={(event) => handlers.onSensXChange(event.target.value)}
+            placeholder={formatDefault(STICK_AIM_DEFAULTS.sens)}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Stick sensitivity (vertical)
+          <input
+            type="number"
+            step="1"
+            value={sensYValue}
+            onChange={(event) => handlers.onSensYChange(event.target.value)}
+            placeholder={formatDefault(STICK_AIM_DEFAULTS.sens)}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Stick power
+          <input
+            type="number"
+            step="0.1"
+            value={powerValue}
+            onChange={(event) => handlers.onPowerChange(event.target.value)}
+            placeholder={formatDefault(STICK_AIM_DEFAULTS.power)}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Acceleration rate
+          <input
+            type="number"
+            step="0.1"
+            value={accelRateValue}
+            onChange={(event) => handlers.onAccelerationRateChange(event.target.value)}
+            placeholder={formatDefault(STICK_AIM_DEFAULTS.accelerationRate)}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Acceleration cap
+          <input
+            type="number"
+            step="0.1"
+            value={accelCapValue}
+            onChange={(event) => handlers.onAccelerationCapChange(event.target.value)}
+            placeholder={formatDefault(STICK_AIM_DEFAULTS.accelerationCap)}
+            disabled={disabled}
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
 
 const SPECIAL_BINDINGS = [
   { value: '', label: 'Special Binds' },
@@ -321,6 +419,8 @@ export function KeymapControls({
   stickModeSettings,
   onStickModeChange,
   onRingModeChange,
+  stickAimSettings,
+  stickAimHandlers,
   adaptiveTriggerValue = '',
   onAdaptiveTriggerChange,
 }: KeymapControlsProps) {
@@ -893,6 +993,11 @@ export function KeymapControls({
                   disabled={isCalibrating}
                   onInnerChange={(value) => onStickDeadzoneChange?.('LEFT', 'INNER', value)}
                   onOuterChange={(value) => onStickDeadzoneChange?.('LEFT', 'OUTER', value)}
+                  modeExtras={
+                    stickModeSettings?.left.mode === 'AIM' && stickAimSettings && stickAimHandlers ? (
+                      <StickAimSettings values={stickAimSettings} handlers={stickAimHandlers} disabled={isCalibrating} />
+                    ) : null
+                  }
                 />
                 {renderSectionActions()}
                 <StickSettingsCard
@@ -908,6 +1013,11 @@ export function KeymapControls({
                   disabled={isCalibrating}
                   onInnerChange={(value) => onStickDeadzoneChange?.('RIGHT', 'INNER', value)}
                   onOuterChange={(value) => onStickDeadzoneChange?.('RIGHT', 'OUTER', value)}
+                  modeExtras={
+                    stickModeSettings?.right.mode === 'AIM' && stickAimSettings && stickAimHandlers ? (
+                      <StickAimSettings values={stickAimSettings} handlers={stickAimHandlers} disabled={isCalibrating} />
+                    ) : null
+                  }
                 />
               {renderSectionActions()}
             </>

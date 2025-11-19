@@ -31,18 +31,6 @@ const DEFAULT_HOLD_PRESS_TIME = 0.15
 const DEFAULT_WINDOW_SECONDS = 0.15
 const DEFAULT_STICK_DEADZONE_INNER = '0.15'
 const DEFAULT_STICK_DEADZONE_OUTER = '0.10'
-const STICK_MODES = [
-  'NO_MOUSE',
-  'AIM',
-  'FLICK',
-  'FLICK_ONLY',
-  'ROTATE_ONLY',
-  'MOUSE_RING',
-  'MOUSE_AREA',
-  'SCROLL_WHEEL',
-  'HYBRID_AIM',
-] as const
-const RING_MODES = ['INNER', 'OUTER'] as const
 const REQUIRED_HEADER_LINES = [
   { pattern: /^RESET_MAPPINGS\b/i, value: 'RESET_MAPPINGS' },
   { pattern: /^TELEMETRY_ENABLED\b/i, value: 'TELEMETRY_ENABLED = ON' },
@@ -221,7 +209,6 @@ const simPressWindowIsCustom = simPressWindowState.isCustom
     const parsed = parseFloat(raw)
     return Number.isFinite(parsed) ? parsed : undefined
   }, [configText])
-  const touchpadDualStageModeValue = getKeymapValue(configText, 'TOUCHPAD_DUAL_STAGE_MODE') ?? ''
   const sensitivityModeshiftButton = useMemo(() => {
     const regex = /^\s*([A-Z0-9+\-_]+)\s*,\s*(GYRO_SENS|MIN_GYRO_SENS|MAX_GYRO_SENS|MIN_GYRO_THRESHOLD|MAX_GYRO_THRESHOLD)\s*=/im
     const match = configText.match(regex)
@@ -897,6 +884,101 @@ const handleDeleteLibraryProfile = async (name: string) => {
     })
   }, [])
 
+  const handleStickSensChange = useCallback(
+    (axis: 'X' | 'Y') => (value: string) => {
+      const trimmed = value.trim()
+      setConfigText(prev => {
+        const raw = getKeymapValue(prev, 'STICK_SENS')
+        const tokens = raw ? raw.trim().split(/\s+/).filter(Boolean) : []
+        const parseNum = (input: string | undefined) => {
+          if (!input || !input.trim()) return null
+          const parsed = Number(input)
+          return Number.isFinite(parsed) ? parsed : null
+        }
+        const currentX = parseNum(tokens[0])
+        const currentY = parseNum(tokens[1])
+        if (axis === 'X') {
+          if (!trimmed) {
+            return removeKeymapEntry(prev, 'STICK_SENS')
+          }
+          const nextX = parseNum(trimmed)
+          if (nextX === null) return prev
+          if (currentY === null) {
+            return updateKeymapEntry(prev, 'STICK_SENS', [nextX])
+          }
+          return updateKeymapEntry(prev, 'STICK_SENS', [nextX, currentY])
+        }
+        // axis === 'Y'
+        if (currentX === null) {
+          if (!trimmed) {
+            return removeKeymapEntry(prev, 'STICK_SENS')
+          }
+          const inferred = parseNum(trimmed)
+          if (inferred === null) return prev
+          return updateKeymapEntry(prev, 'STICK_SENS', [inferred])
+        }
+        if (!trimmed) {
+          return updateKeymapEntry(prev, 'STICK_SENS', [currentX])
+        }
+        const nextY = parseNum(trimmed)
+        if (nextY === null) return prev
+        return updateKeymapEntry(prev, 'STICK_SENS', [currentX, nextY])
+      })
+    },
+    []
+  )
+
+  const handleStickPowerChange = useCallback((value: string) => {
+    const trimmed = value.trim()
+    setConfigText(prev => {
+      if (!trimmed) {
+        return removeKeymapEntry(prev, 'STICK_POWER')
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed)) return prev
+      return updateKeymapEntry(prev, 'STICK_POWER', [parsed])
+    })
+  }, [])
+
+  const handleStickAccelerationRateChange = useCallback((value: string) => {
+    const trimmed = value.trim()
+    setConfigText(prev => {
+      if (!trimmed) {
+        return removeKeymapEntry(prev, 'STICK_ACCELERATION_RATE')
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed)) return prev
+      return updateKeymapEntry(prev, 'STICK_ACCELERATION_RATE', [parsed])
+    })
+  }, [])
+
+  const handleStickAccelerationCapChange = useCallback((value: string) => {
+    const trimmed = value.trim()
+    setConfigText(prev => {
+      if (!trimmed) {
+        return removeKeymapEntry(prev, 'STICK_ACCELERATION_CAP')
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed)) return prev
+      return updateKeymapEntry(prev, 'STICK_ACCELERATION_CAP', [parsed])
+    })
+  }, [])
+  const stickAimHandlers = useMemo(
+    () => ({
+      onSensXChange: handleStickSensChange('X'),
+      onSensYChange: handleStickSensChange('Y'),
+      onPowerChange: handleStickPowerChange,
+      onAccelerationRateChange: handleStickAccelerationRateChange,
+      onAccelerationCapChange: handleStickAccelerationCapChange,
+    }),
+    [
+      handleStickSensChange,
+      handleStickPowerChange,
+      handleStickAccelerationRateChange,
+      handleStickAccelerationCapChange,
+    ]
+  )
+
   const handleRecalibrate = async () => {
     if (isCalibrating || recalibrating) return
     setRecalibrating(true)
@@ -984,6 +1066,32 @@ const handleDeleteLibraryProfile = async (name: string) => {
         mode: getKeymapValue(configText, 'RIGHT_STICK_MODE') ?? '',
         ring: getKeymapValue(configText, 'RIGHT_RING_MODE') ?? '',
       },
+    }
+  }, [configText])
+  const stickAimSettings = useMemo(() => {
+    const rawSens = getKeymapValue(configText, 'STICK_SENS')
+    const tokens = rawSens ? rawSens.trim().split(/\s+/).filter(Boolean) : []
+    const sensX = tokens[0] ?? ''
+    const sensY = tokens[1] ?? ''
+    const displaySensX = sensX || ''
+    const displaySensY = sensY || sensX || ''
+    const parseNum = (value: string, fallback: number) => {
+      if (!value.trim()) return fallback
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : fallback
+    }
+    const sensXNumber = parseNum(sensX, 0)
+    const sensYNumber = sensY ? parseNum(sensY, sensXNumber) : sensXNumber
+    return {
+      sensX,
+      sensY,
+      displaySensX,
+      displaySensY,
+      sensXNumber,
+      sensYNumber,
+      power: getKeymapValue(configText, 'STICK_POWER') ?? '',
+      accelerationRate: getKeymapValue(configText, 'STICK_ACCELERATION_RATE') ?? '',
+      accelerationCap: getKeymapValue(configText, 'STICK_ACCELERATION_CAP') ?? '',
     }
   }, [configText])
   const adaptiveTriggerValue = useMemo(() => {
@@ -1177,6 +1285,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onRingModeChange={handleRingModeChange}
               adaptiveTriggerValue={adaptiveTriggerValue}
               onAdaptiveTriggerChange={handleAdaptiveTriggerChange}
+              stickAimSettings={stickAimSettings}
+              stickAimHandlers={stickAimHandlers}
             />
             <ConfigEditor
               value={configText}
@@ -1236,6 +1346,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onRingModeChange={handleRingModeChange}
               adaptiveTriggerValue={adaptiveTriggerValue}
               onAdaptiveTriggerChange={handleAdaptiveTriggerChange}
+              stickAimSettings={stickAimSettings}
+              stickAimHandlers={stickAimHandlers}
             />
             <ConfigEditor
               value={configText}
@@ -1286,6 +1398,11 @@ const handleDeleteLibraryProfile = async (name: string) => {
                 right: rightStickDeadzone,
               }}
               onStickDeadzoneChange={handleStickDeadzoneChange}
+              stickModeSettings={stickModes}
+              onStickModeChange={handleStickModeChange}
+              onRingModeChange={handleRingModeChange}
+              stickAimSettings={stickAimSettings}
+              stickAimHandlers={stickAimHandlers}
             />
             <ConfigEditor
               value={configText}

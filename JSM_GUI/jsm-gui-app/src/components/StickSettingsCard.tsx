@@ -1,3 +1,5 @@
+import { ReactNode } from 'react'
+
 type StickSettingsCardProps = {
   title: string
   innerValue: string
@@ -11,6 +13,7 @@ type StickSettingsCardProps = {
   disabled?: boolean
   onInnerChange: (value: string) => void
   onOuterChange: (value: string) => void
+  modeExtras?: ReactNode
 }
 
 const clamp = (value: number) => {
@@ -31,6 +34,7 @@ export function StickSettingsCard({
   disabled = false,
   onInnerChange,
   onOuterChange,
+  modeExtras,
 }: StickSettingsCardProps) {
   const resolvedInner = clamp(parseFloat(innerValue || defaultInner))
   const resolvedOuter = clamp(parseFloat(outerValue || defaultOuter))
@@ -47,7 +51,6 @@ export function StickSettingsCard({
           disabled={disabled}
         >
           <option value="">Default (NO_MOUSE)</option>
-          <option value="NO_MOUSE">No Mouse</option>
           <option value="AIM">Aim</option>
           <option value="FLICK">Flick</option>
           <option value="FLICK_ONLY">Flick Only</option>
@@ -115,6 +118,7 @@ export function StickSettingsCard({
           disabled={disabled}
         />
       </label>
+      {modeExtras && <div className="stick-mode-extras">{modeExtras}</div>}
     </div>
   )
 }
