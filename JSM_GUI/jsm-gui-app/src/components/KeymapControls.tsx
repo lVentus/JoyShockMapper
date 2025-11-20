@@ -400,6 +400,8 @@ const SPECIAL_BINDINGS = [
   { value: '', label: 'Special Binds' },
   { value: 'GYRO_OFF', label: 'Hold to disable gyro' },
   { value: 'GYRO_ON', label: 'Hold to enable gyro' },
+  { value: 'GYRO_OFF_ALL', label: 'Hold to disable gyro (all controllers)' },
+  { value: 'GYRO_ON_ALL', label: 'Hold to enable gyro (all controllers)' },
   { value: 'GYRO_INVERT', label: 'Invert gyro direction (both axes)' },
   { value: 'GYRO_INV_X', label: 'Invert gyro X axis' },
   { value: 'GYRO_INV_Y', label: 'Invert gyro Y axis' },
@@ -414,6 +416,8 @@ const SPECIAL_OPTION_MANUAL_LIST = SPECIAL_BINDINGS.filter(option => option.valu
 const SPECIAL_LABELS: Record<string, string> = {
   GYRO_OFF: 'Disable gyro',
   GYRO_ON: 'Enable gyro',
+  GYRO_OFF_ALL: 'Disable gyro (all)',
+  GYRO_ON_ALL: 'Enable gyro (all)',
   GYRO_INVERT: 'Invert gyro axes',
   GYRO_INV_X: 'Invert gyro X axis',
   GYRO_INV_Y: 'Invert gyro Y axis',
