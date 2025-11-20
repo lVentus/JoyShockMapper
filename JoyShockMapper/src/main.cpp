@@ -13,6 +13,7 @@
 #include "Telemetry.h"
 #include <filesystem>
 #include <algorithm>
+#include <atomic>
 #define _USE_MATH_DEFINES
 #include <math.h> // M_PI
 
@@ -38,6 +39,9 @@ float os_mouse_speed = 1.0;
 float last_flick_and_rotation = 0.0;
 unique_ptr<PollingThread> autoLoadThread;
 unique_ptr<JSM::AutoConnect> autoConnectThread;
+std::atomic<int> g_gyroGlobalOffCount(0);
+std::atomic<int> g_gyroGlobalOnCount(0);
+std::atomic_bool g_hasGyroOnAllBinding(false);
 unique_ptr<PollingThread> minimizeThread;
 bool devicesCalibrating = false;
 unordered_map<int, shared_ptr<JoyShock>> handle_to_joyshock;
@@ -764,11 +768,26 @@ void joyShockPollCallback(int jcHandle, JOY_SHOCK_STATE state, JOY_SHOCK_STATE l
 			trackball_x_pressed = true;
 		else if (pair.second.code == GYRO_TRACK_Y)
 			trackball_y_pressed = true;
-		else if (pair.second.code == GYRO_TRACKBALL)
-		{
-			trackball_x_pressed = true;
-			trackball_y_pressed = true;
-		}
+	else if (pair.second.code == GYRO_TRACKBALL)
+	{
+		trackball_x_pressed = true;
+		trackball_y_pressed = true;
+	}
+}
+	const int globalOnCount = g_gyroGlobalOnCount.load();
+	const int globalOffCount = g_gyroGlobalOffCount.load();
+	if (globalOnCount > 0)
+	{
+		blockGyro = false;
+	}
+	else if (globalOffCount > 0)
+	{
+		blockGyro = true;
+	}
+	else if (g_hasGyroOnAllBinding.load())
+	{
+		// No global ON presses active but a global ON binding exists: default to off-until-held.
+		blockGyro = true;
 	}
 
 	float decay = exp2f(-deltaTime * jc->getSetting(SettingID::TRACKBALL_DECAY));
@@ -1300,6 +1319,9 @@ bool do_RESET_MAPPINGS(CmdRegistry *registry)
 
 	os_mouse_speed = 1.0f;
 	last_flick_and_rotation = 0.0f;
+	g_gyroGlobalOffCount.store(0);
+	g_gyroGlobalOnCount.store(0);
+	g_hasGyroOnAllBinding.store(false);
 	if (registry)
 	{
 		if (!registry->loadConfigFile("OnReset.txt"))
