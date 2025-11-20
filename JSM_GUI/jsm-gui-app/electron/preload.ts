@@ -16,6 +16,10 @@ const electronAPI = {
   deleteLibraryProfile: (name: string) => ipcRenderer.invoke('library-delete-profile', name),
   getActiveProfile: () => ipcRenderer.invoke('get-active-profile'),
   activateLibraryProfile: (name: string) => ipcRenderer.invoke('activate-library-profile', name),
+  loadCalibrationPreset: () => ipcRenderer.invoke('load-calibration-preset'),
+  readCalibrationPreset: () => ipcRenderer.invoke('read-calibration-preset'),
+  saveCalibrationPreset: (content: string) => ipcRenderer.invoke('save-calibration-preset', content),
+  runCalibrationCommand: (command: string) => ipcRenderer.invoke('calibration-run-command', command),
 }
 
 const telemetryListeners = new Set<(payload: unknown) => void>()

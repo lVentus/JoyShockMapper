@@ -369,6 +369,47 @@ async function tryInjectConsoleCommand(command: string) {
   })
 }
 
+async function runConsoleCommandWithOutput(command: string) {
+  if (process.platform !== 'win32') {
+    return { success: false, output: '' }
+  }
+  if (!jsmProcess || !jsmProcess.pid) {
+    return { success: false, output: '' }
+  }
+  try {
+    await fs.access(CONSOLE_INJECTOR)
+  } catch {
+    await writeLog('Console injector executable not found; cannot inject command for capture.')
+    return { success: false, output: '' }
+  }
+  return new Promise<{ success: boolean; output: string }>(resolve => {
+    const injector = spawn(CONSOLE_INJECTOR, [String(jsmProcess!.pid), command, '--capture'], {
+      cwd: BIN_DIR,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let output = ''
+    injector.stdout?.on('data', chunk => {
+      output += chunk.toString()
+    })
+    injector.stderr?.on('data', chunk => {
+      output += chunk.toString()
+    })
+    injector.once('error', async err => {
+      await writeLog(`Console injector failed to start: ${String(err)}`)
+      resolve({ success: false, output })
+    })
+    injector.once('exit', async code => {
+      if (code === 0) {
+        resolve({ success: true, output })
+      } else {
+        await writeLog(`Console injector exited with code ${code}`)
+        resolve({ success: false, output })
+      }
+    })
+  })
+}
+
 function launchJoyShockMapper(calibrationSeconds = 5) {
   if (jsmProcess) {
     return Promise.resolve()
@@ -661,4 +702,49 @@ ipcMain.handle('get-calibration-seconds', async () => calibrationSecondsSetting)
 ipcMain.handle('set-calibration-seconds', async (_event, seconds: number) => {
   await writeCalibrationSecondsToStartup(seconds)
   return calibrationSecondsSetting
+})
+
+ipcMain.handle('load-calibration-preset', async () => {
+  await ensureRequiredFiles()
+  const active = (await getStartupProfilePath()) ?? DEFAULT_PROFILE_RELATIVE
+  const calibrationRelative = 'GyroConfigs/_3Dcalibrate.txt'
+  const calibrationAbsolute = absoluteProfilePath(calibrationRelative)
+  try {
+    await fs.access(calibrationAbsolute)
+  } catch {
+    await writeLog(`Calibration preset not found at ${calibrationAbsolute}`)
+    return { success: false, activeProfile: active }
+  }
+  const injected = await tryInjectConsoleCommand(calibrationRelative)
+  return { success: injected, activeProfile: active, calibrationProfile: calibrationRelative }
+})
+
+ipcMain.handle('read-calibration-preset', async () => {
+  await ensureRequiredFiles()
+  const calibrationRelative = 'GyroConfigs/_3Dcalibrate.txt'
+  const calibrationAbsolute = absoluteProfilePath(calibrationRelative)
+  try {
+    const content = await fs.readFile(calibrationAbsolute, 'utf8')
+    return { success: true, calibrationProfile: calibrationRelative, content }
+  } catch (err) {
+    await writeLog(`Failed to read calibration preset: ${String(err)}`)
+    return { success: false }
+  }
+})
+
+ipcMain.handle('save-calibration-preset', async (_event, content: string) => {
+  await ensureRequiredFiles()
+  const calibrationRelative = 'GyroConfigs/_3Dcalibrate.txt'
+  const calibrationAbsolute = absoluteProfilePath(calibrationRelative)
+  try {
+    await fs.writeFile(calibrationAbsolute, content ?? '', 'utf8')
+    return { success: true }
+  } catch (err) {
+    await writeLog(`Failed to save calibration preset: ${String(err)}`)
+    return { success: false }
+  }
+})
+
+ipcMain.handle('calibration-run-command', async (_event, command: string) => {
+  return runConsoleCommandWithOutput(command)
 })

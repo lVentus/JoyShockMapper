@@ -10,6 +10,7 @@
 #include <fstream>
 #include <chrono>
 #include <ctime>
+#include <algorithm>
 
 namespace
 {
@@ -99,6 +100,134 @@ void AppendLog(const std::wstring &message)
   log << "[" << timestamp << "] " << utf8Msg << std::endl;
 }
 
+std::wstring TrimLeadingWhitespace(const std::wstring &text)
+{
+  const size_t first = text.find_first_not_of(L" \t\r\n");
+  if (first == std::wstring::npos)
+  {
+    return L"";
+  }
+  return text.substr(first);
+}
+
+std::wstring TrimWhitespace(const std::wstring &text)
+{
+  const size_t first = text.find_first_not_of(L" \t\r\n");
+  if (first == std::wstring::npos)
+  {
+    return L"";
+  }
+  const size_t last = text.find_last_not_of(L" \t\r\n");
+  return text.substr(first, last - first + 1);
+}
+
+std::wstring TrimRight(const std::wstring &line)
+{
+  const size_t pos = line.find_last_not_of(L' ');
+  if (pos == std::wstring::npos)
+  {
+    return L"";
+  }
+  return line.substr(0, pos + 1);
+}
+
+std::wstring ReadConsoleText()
+{
+  HANDLE outputHandle = CreateFileW(L"CONOUT$", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+  if (outputHandle == INVALID_HANDLE_VALUE)
+  {
+    DWORD error = GetLastError();
+    AppendLog(L"CreateFile(CONOUT$) failed with error " + std::to_wstring(error));
+    std::wcerr << L"CreateFile(CONOUT$) failed (error " << error << L")\n";
+    return L"";
+  }
+
+  CONSOLE_SCREEN_BUFFER_INFO csbi{};
+  if (!GetConsoleScreenBufferInfo(outputHandle, &csbi))
+  {
+    DWORD error = GetLastError();
+    AppendLog(L"GetConsoleScreenBufferInfo failed with error " + std::to_wstring(error));
+    std::wcerr << L"GetConsoleScreenBufferInfo failed (error " << error << L")\n";
+    CloseHandle(outputHandle);
+    return L"";
+  }
+
+  const DWORD width = csbi.dwSize.X;
+  const SHORT height = csbi.dwSize.Y;
+  if (width == 0 || height <= 0)
+  {
+    CloseHandle(outputHandle);
+    return L"";
+  }
+
+  const DWORD length = width * height;
+  std::wstring buffer;
+  buffer.resize(length, L' ');
+  DWORD charsRead = 0;
+  if (!ReadConsoleOutputCharacterW(outputHandle, buffer.data(), length, {0, 0}, &charsRead))
+  {
+    DWORD error = GetLastError();
+    AppendLog(L"ReadConsoleOutputCharacterW failed with error " + std::to_wstring(error));
+    std::wcerr << L"ReadConsoleOutputCharacterW failed (error " << error << L")\n";
+    CloseHandle(outputHandle);
+    return L"";
+  }
+  CloseHandle(outputHandle);
+
+  std::wstring result;
+  result.reserve(static_cast<size_t>(charsRead) + static_cast<size_t>(height));
+  for (SHORT row = 0; row < height; ++row)
+  {
+    const size_t start = static_cast<size_t>(row) * static_cast<size_t>(width);
+    std::wstring line = buffer.substr(start, width);
+    result.append(TrimRight(line));
+    result.push_back(L'\n');
+  }
+  return result;
+}
+
+std::wstring DiffConsoleText(const std::wstring &before, const std::wstring &after)
+{
+  const size_t limit = (std::min)(before.size(), after.size());
+  size_t index = 0;
+  while (index < limit && before[index] == after[index])
+  {
+    ++index;
+  }
+  if (index >= after.size())
+  {
+    return L"";
+  }
+  return after.substr(index);
+}
+
+std::wstring SanitizeOutput(const std::wstring &text)
+{
+  std::wstring cleaned;
+  cleaned.reserve(text.size());
+  for (wchar_t ch : text)
+  {
+    if (ch == L'\n' || ch == L'\r' || ch == L'\t')
+    {
+      cleaned.push_back(ch);
+    }
+    else if (ch >= 0x20 && ch < 0xD800)
+    {
+      cleaned.push_back(ch);
+    }
+    else if (ch >= 0xE000 && ch <= 0xFFFD)
+    {
+      cleaned.push_back(ch);
+    }
+  }
+  const size_t MAX_CHARS = 8192;
+  if (cleaned.size() > MAX_CHARS)
+  {
+    return cleaned.substr(cleaned.size() - MAX_CHARS);
+  }
+  return cleaned;
+}
+
 std::vector<INPUT_RECORD> BuildInputSequence(std::wstring_view command)
 {
   const WORD escScan = WORD(MapVirtualKeyW(VK_ESCAPE, MAPVK_VK_TO_VSC));
@@ -127,7 +256,7 @@ std::vector<INPUT_RECORD> BuildInputSequence(std::wstring_view command)
   return inputs;
 }
 
-bool InjectCommand(DWORD pid, std::wstring_view command)
+bool InjectCommand(DWORD pid, std::wstring_view command, std::wstring *capturedOutput = nullptr)
 {
   FreeConsole();
   if (!AttachConsole(pid))
@@ -144,6 +273,13 @@ bool InjectCommand(DWORD pid, std::wstring_view command)
   } guard;
 
   SetConsoleCtrlHandler(nullptr, TRUE);
+
+  std::wstring beforeText;
+  if (capturedOutput)
+  {
+    beforeText = ReadConsoleText();
+  }
+
   HANDLE inputHandle = CreateFileW(L"CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
   if (inputHandle == INVALID_HANDLE_VALUE)
   {
@@ -164,6 +300,39 @@ bool InjectCommand(DWORD pid, std::wstring_view command)
     return false;
   }
   CloseHandle(inputHandle);
+
+  if (capturedOutput)
+  {
+    std::wstring diff;
+    const int attempts = 6;
+    for (int i = 0; i < attempts; ++i)
+    {
+      Sleep(200);
+      std::wstring afterText = ReadConsoleText();
+      diff = DiffConsoleText(beforeText, afterText);
+      if (!diff.empty())
+      {
+        break;
+      }
+    }
+    std::wstring candidate = SanitizeOutput(TrimWhitespace(diff));
+    // Drop the injected command echo if present at the start (JSM echoes the line back).
+    if (!candidate.empty())
+    {
+      // Find the first newline; if the command echo is present, the actual output is after it.
+      size_t eol = candidate.find(L'\n');
+      if (eol != std::wstring::npos)
+      {
+        candidate = TrimWhitespace(candidate.substr(eol + 1));
+      }
+    }
+    if (candidate.empty())
+    {
+      std::wstring afterText = ReadConsoleText();
+      candidate = SanitizeOutput(TrimWhitespace(afterText));
+    }
+    *capturedOutput = candidate;
+  }
   return written == inputs.size();
 }
 
@@ -173,7 +342,7 @@ int wmain(int argc, wchar_t *argv[])
 {
   if (argc < 3)
   {
-    std::wcerr << L"Usage: jsm-console-injector.exe <pid> <command>\n";
+    std::wcerr << L"Usage: jsm-console-injector.exe <pid> <command> [--capture]\n";
     return EXIT_FAILURE;
   }
 
@@ -191,9 +360,24 @@ int wmain(int argc, wchar_t *argv[])
     return EXIT_FAILURE;
   }
 
-  if (!InjectCommand(pid, command))
+  bool captureOutput = false;
+  for (int i = 3; i < argc; ++i)
+  {
+    if (std::wcscmp(argv[i], L"--capture") == 0 || std::wcscmp(argv[i], L"-c") == 0)
+    {
+      captureOutput = true;
+    }
+  }
+
+  std::wstring captured;
+  if (!InjectCommand(pid, command, captureOutput ? &captured : nullptr))
   {
     return EXIT_FAILURE;
+  }
+
+  if (captureOutput && !captured.empty())
+  {
+    std::wcout << captured;
   }
 
   return EXIT_SUCCESS;

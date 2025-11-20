@@ -21,6 +21,7 @@ import { ProfileManager } from './components/ProfileManager'
 import { GyroBehaviorControls } from './components/GyroBehaviorControls'
 import { NoiseSteadyingControls } from './components/NoiseSteadyingControls'
 import { KeymapControls } from './components/KeymapControls'
+import { SectionActions } from './components/SectionActions'
 
 const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 const formatNumber = (value: number | undefined, digits = 2) =>
@@ -56,6 +57,23 @@ const ensureHeaderLines = (text: string) => {
   const header = REQUIRED_HEADER_LINES.map(entry => entry.value)
   const rest = remaining.join('\n').trimStart()
   return rest ? `${header.join('\n')}\n${rest}` : header.join('\n')
+}
+
+const upsertFlagCommand = (text: string, key: string, enabled: boolean) => {
+  const lines = text.split(/\r?\n/).filter(line => {
+    const trimmed = line.trim().toUpperCase()
+    if (!trimmed) return true
+    return !(trimmed === key.toUpperCase() || trimmed.startsWith(`${key.toUpperCase()} `) || trimmed.startsWith(`${key.toUpperCase()}=`))
+  })
+  if (enabled) {
+    lines.push(key)
+  }
+  return lines.join('\n')
+}
+
+const hasFlagCommand = (text: string, key: string) => {
+  const pattern = new RegExp(`^\\s*${key}\\b`, 'im')
+  return pattern.test(text)
 }
 
 const CALIBRATION_PATTERNS = [
@@ -1036,7 +1054,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
     if (!raw) return ''
     return raw.trim()
   }, [configText])
-  const counterOsMouseSpeedEnabled = useMemo(() => Boolean(getKeymapValue(configText, 'COUNTER_OS_MOUSE_SPEED')), [configText])
+  const counterOsMouseSpeedEnabled = useMemo(() => hasFlagCommand(configText, 'COUNTER_OS_MOUSE_SPEED'), [configText])
 
   const handleMouseRingRadiusChange = useCallback((value: string) => {
     const trimmed = value.trim()
@@ -1053,29 +1071,57 @@ const handleDeleteLibraryProfile = async (name: string) => {
   }, [])
 
   const handleCounterOsMouseSpeedChange = useCallback((enabled: boolean) => {
-    setConfigText(prev => {
-      if (!enabled) {
-        return removeKeymapEntry(prev, 'COUNTER_OS_MOUSE_SPEED')
-      }
-      return updateKeymapEntry(prev, 'COUNTER_OS_MOUSE_SPEED', ['ON'])
-    })
+    setConfigText(prev => upsertFlagCommand(prev, 'COUNTER_OS_MOUSE_SPEED', enabled))
   }, [])
 
   const [isCalibrationModalOpen, setCalibrationModalOpen] = useState(false)
   const [calibrationRestorePath, setCalibrationRestorePath] = useState<string | null>(null)
+  const [calibrationCounterOs, setCalibrationCounterOs] = useState<boolean>(counterOsMouseSpeedEnabled)
+  const [calibrationInGameSens, setCalibrationInGameSens] = useState<string>(sensitivity.inGameSens?.toString() ?? '')
+  const [calibrationText, setCalibrationText] = useState<string>('')
+  const [calibrationDirty, setCalibrationDirty] = useState(false)
+  const [calibrationLoadMessage, setCalibrationLoadMessage] = useState<string | null>(null)
+  const [calibrationOutput, setCalibrationOutput] = useState<string>('')
+  useEffect(() => {
+    if (!calibrationLoadMessage) return
+    const id = setTimeout(() => setCalibrationLoadMessage(null), 4000)
+    return () => clearTimeout(id)
+  }, [calibrationLoadMessage])
+  const resetCalibrationInputs = useCallback(() => {
+    const sens = getKeymapValue(calibrationText, 'IN_GAME_SENS') ?? ''
+    const counter = hasFlagCommand(calibrationText, 'COUNTER_OS_MOUSE_SPEED')
+    setCalibrationInGameSens(sens)
+    setCalibrationCounterOs(counter)
+    setCalibrationDirty(false)
+  }, [calibrationText])
+
   const handleOpenCalibration = useCallback(async () => {
+    setCalibrationOutput('')
+    setCalibrationCounterOs(counterOsMouseSpeedEnabled)
+    setCalibrationInGameSens(sensitivity.inGameSens?.toString() ?? '')
     setCalibrationModalOpen(true)
     try {
       const result = await window.electronAPI?.loadCalibrationPreset?.()
       if (result?.activeProfile) {
         setCalibrationRestorePath(result.activeProfile)
       }
+      setCalibrationLoadMessage(result?.success ? 'Calibration preset loaded.' : 'Failed to load calibration preset.')
+      const preset = await window.electronAPI?.readCalibrationPreset?.()
+      if (preset?.success && preset.content !== undefined) {
+        setCalibrationText(preset.content)
+        const presetSens = getKeymapValue(preset.content, 'IN_GAME_SENS') ?? sensitivity.inGameSens?.toString() ?? ''
+        const presetCounter = hasFlagCommand(preset.content, 'COUNTER_OS_MOUSE_SPEED')
+        setCalibrationInGameSens(presetSens)
+        setCalibrationCounterOs(presetCounter)
+        setCalibrationDirty(false)
+      }
     } catch (err) {
       console.error('Failed to load calibration preset', err)
     }
-  }, [])
+  }, [counterOsMouseSpeedEnabled, sensitivity.inGameSens])
   const handleCloseCalibration = useCallback(async () => {
     setCalibrationModalOpen(false)
+    setCalibrationOutput('')
     if (calibrationRestorePath) {
       try {
         await window.electronAPI?.applyProfile?.(calibrationRestorePath, configText)
@@ -1086,6 +1132,43 @@ const handleDeleteLibraryProfile = async (name: string) => {
       }
     }
   }, [calibrationRestorePath, configText])
+
+  const buildCalibrationPreset = useCallback(() => {
+    let next = calibrationText || ''
+    next = upsertFlagCommand(next, 'COUNTER_OS_MOUSE_SPEED', calibrationCounterOs)
+    const trimmed = calibrationInGameSens.trim()
+    if (!trimmed) {
+      next = removeKeymapEntry(next, 'IN_GAME_SENS')
+    } else {
+      const parsed = Number(trimmed)
+      if (Number.isFinite(parsed)) {
+        next = updateKeymapEntry(next, 'IN_GAME_SENS', [parsed])
+      }
+    }
+    return next
+  }, [calibrationCounterOs, calibrationInGameSens, calibrationText])
+
+  const handleApplyCalibrationPreset = useCallback(async () => {
+    const nextText = buildCalibrationPreset()
+    setCalibrationText(nextText)
+    setCalibrationDirty(false)
+    await window.electronAPI?.saveCalibrationPreset?.(nextText)
+  }, [buildCalibrationPreset])
+
+  const handleRunCalibration = useCallback(async () => {
+    try {
+      const result = await window.electronAPI?.runCalibrationCommand?.('CALCULATE_REAL_WORLD_CALIBRATION')
+      const output = result && typeof result.output === 'string' ? result.output : ''
+      if (output.length > 0) {
+        setCalibrationOutput(output)
+      } else {
+        setCalibrationOutput('No response captured.')
+      }
+    } catch (err) {
+      setCalibrationOutput(`Failed to run calculation: ${String(err)}`)
+    }
+  }, [])
+
 
   const scrollSensValue = useMemo(() => {
     const raw = getKeymapValue(configText, 'SCROLL_SENS')
@@ -1585,15 +1668,69 @@ const handleDeleteLibraryProfile = async (name: string) => {
       {isCalibrationModalOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <h3>Real-world calibration</h3>
+            <div className="modal-header">
+              <h3>Real-world calibration</h3>
+              {calibrationLoadMessage && <span className="profile-status inline-flag">{calibrationLoadMessage}</span>}
+            </div>
             <p className="modal-description">
-              Loaded the calibration preset. In-game, rotate the stick for a full turn, return here, and run the calculation.
+              Set your in-game sensitivity and whether to counter OS mouse speed, apply the preset to JSM, then in-game rotate the stick for an exact 360°. Come back here to run the calculation.
             </p>
+            <div className="flex-inputs">
+              <label>
+                In-Game Sensitivity
+                <input
+                  type="number"
+                  step="0.1"
+                  value={calibrationInGameSens}
+                  onChange={(event) => {
+                    setCalibrationInGameSens(event.target.value)
+                    setCalibrationDirty(true)
+                  }}
+                />
+              </label>
+            </div>
+            <div className="flex-inputs">
+              <label>
+                Counter OS mouse speed
+                <p className="field-description">Enable for non-raw-input games when Windows pointer speed isn’t 6/11.</p>
+                <select
+                  className="app-select"
+                  value={calibrationCounterOs ? 'ON' : 'OFF'}
+                  onChange={(event) => {
+                    setCalibrationCounterOs(event.target.value === 'ON')
+                    setCalibrationDirty(true)
+                  }}
+                >
+                  <option value="OFF">Off (default)</option>
+                  <option value="ON">On</option>
+                </select>
+              </label>
+            </div>
+            <SectionActions
+              hasPendingChanges={calibrationDirty}
+              statusMessage={statusMessage}
+              onApply={() => {
+                handleApplyCalibrationPreset()
+              }}
+              onCancel={resetCalibrationInputs}
+              applyDisabled={isCalibrating}
+            />
             <div className="modal-actions">
+              <button type="button" className="secondary-btn" onClick={handleRunCalibration} disabled={isCalibrating}>
+                Run calculation
+              </button>
               <button type="button" className="secondary-btn" onClick={handleCloseCalibration}>
                 Close
               </button>
             </div>
+            {calibrationOutput && (
+              <>
+                <div className="calibration-output__label">Calculation result</div>
+                <div className="calibration-output" data-capture-ignore="true">
+                  <pre>{calibrationOutput}</pre>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -26,6 +26,7 @@ type GyroBehaviorControlsProps = {
   onGyroAxisYChange: (value: string) => void
   counterOsMouseSpeed: boolean
   onCounterOsMouseSpeedChange: (enabled: boolean) => void
+  onOpenCalibration?: () => void
   hasPendingChanges: boolean
   onApply: () => void
   onCancel: () => void
@@ -43,6 +44,7 @@ export function GyroBehaviorControls({
   onGyroAxisYChange,
   counterOsMouseSpeed,
   onCounterOsMouseSpeedChange,
+  onOpenCalibration,
   hasPendingChanges,
   onApply,
   onCancel,
@@ -55,6 +57,13 @@ export function GyroBehaviorControls({
       lockMessage="Controls locked while JSM calibrates"
     >
       <h2>Gyro Behavior</h2>
+      {onOpenCalibration && (
+        <div className="flex-inputs">
+          <button type="button" className="secondary-btn full-width-btn" onClick={onOpenCalibration} disabled={isCalibrating}>
+            Calculate real world calibration
+          </button>
+        </div>
+      )}
       <div className="flex-inputs">
         <label>
           Real World Calibration

@@ -16,6 +16,10 @@ declare interface Window {
     activateLibraryProfile?: (name: string) => Promise<{ path: string; name: string; content: string }>
     createLibraryProfile?: () => Promise<{ path: string; name: string; content: string }>
     renameLibraryProfile?: (oldName: string, newName: string) => Promise<{ path: string; name: string; content: string }>
+    loadCalibrationPreset?: () => Promise<{ success: boolean; activeProfile?: string; calibrationProfile?: string }>
+    readCalibrationPreset?: () => Promise<{ success: boolean; calibrationProfile?: string; content?: string }>
+    saveCalibrationPreset?: (content: string) => Promise<{ success: boolean }>
+    runCalibrationCommand?: (command: string) => Promise<{ success: boolean; output: string }>
   }
   telemetry?: {
     onSample?: (callback: (payload: unknown) => void) => () => void
