@@ -2261,7 +2261,24 @@ void initJsmSettings(CmdRegistry *commandRegistry)
 
 	auto ignore_gyro_devices = new JSMSetting<string>(SettingID::IGNORE_GYRO_DEVICES, "");
 	SettingsManager::add(ignore_gyro_devices);
+	auto ignoreParser = [ignore_gyro_devices](JSMCommand *, string_view data, string_view) {
+		string value(data);
+		auto first = value.find_first_not_of(" \t");
+		auto last = value.find_last_not_of(" \t");
+		if (first == string::npos || last == string::npos)
+		{
+			value.clear();
+		}
+		else
+		{
+			value = value.substr(first, last - first + 1);
+		}
+		ignore_gyro_devices->set(value);
+		COUT << "IGNORE_GYRO_DEVICES has been set to " << value << '\n';
+		return true;
+	};
 	commandRegistry->add((new JSMAssignment<string>(*ignore_gyro_devices))
+	                       ->setParser(ignoreParser)
 	                       ->setHelp("Space-separated list of VID:PID pairs (hex) whose gyro should be ignored, e.g. IGNORE_GYRO_DEVICES = 0x054c:0x0ce6"));
 	ignore_gyro_devices->addOnChangeListener([](const string &) { UpdateIgnoredGyroDevices(); });
 
