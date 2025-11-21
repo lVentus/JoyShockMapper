@@ -21,6 +21,7 @@ add_executable (
     src/main.cpp
     src/NaturalCurve.cpp
     src/PowerCurve.cpp
+    src/QuadraticCurve.cpp
     src/operators.cpp
     src/CmdRegistry.cpp
     src/quatMaths.cpp
@@ -58,6 +59,8 @@ add_executable (
     include/Stick.h
     include/JoyShock.h
     include/NaturalCurve.h
+    include/PowerCurve.h
+    include/QuadraticCurve.h
 )
 
 if (WINDOWS)
@@ -271,6 +274,8 @@ if (BUILD_JSM_TESTS)
         src/NaturalCurve.cpp
         tests/power_curve_tests.cpp
         src/PowerCurve.cpp
+        tests/quadratic_curve_tests.cpp
+        src/QuadraticCurve.cpp
     )
     target_link_libraries(jsm_tests PRIVATE Catch2::Catch2WithMain)
     target_include_directories(jsm_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
