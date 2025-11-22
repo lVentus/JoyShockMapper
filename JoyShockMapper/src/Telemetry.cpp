@@ -87,7 +87,6 @@ public:
 		    << ",\"ts\":" << sample.timestampMs
 		    << ",\"omega\":" << sample.omega
 		    << ",\"t\":" << sample.normalized
-		    << ",\"u\":" << sample.normalizedPostCurve
 		    << ",\"sensX\":" << sample.sensX
 		    << ",\"sensY\":" << sample.sensY
 		    << ",\"minThr\":" << sample.minThreshold

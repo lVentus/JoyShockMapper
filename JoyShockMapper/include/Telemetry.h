@@ -18,7 +18,6 @@ struct TelemetrySample
 	uint64_t timestampMs = 0;
 	float omega = 0.0f;
 	float normalized = 0.0f;
-	float normalizedPostCurve = 0.0f;
 	float sensX = 0.0f;
 	float sensY = 0.0f;
 	float minThreshold = 0.0f;

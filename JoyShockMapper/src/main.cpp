@@ -11,6 +11,11 @@
 #include "SettingsManager.h"
 #include "JoyShock.h"
 #include "Telemetry.h"
+#include "NaturalCurve.h"
+#include "PowerCurve.h"
+#include "QuadraticCurve.h"
+#include "SigmoidCurve.h"
+#include "JumpCurve.h"
 #include <filesystem>
 #include <algorithm>
 #include <atomic>
@@ -913,46 +918,82 @@ void joyShockPollCallback(int jcHandle, JOY_SHOCK_STATE state, JOY_SHOCK_STATE l
 
 	pair<float, float> lowSensXY = jc->getSetting<FloatXY>(SettingID::MIN_GYRO_SENS);
 	pair<float, float> hiSensXY = jc->getSetting<FloatXY>(SettingID::MAX_GYRO_SENS);
+	const AccelCurve accelCurve = jc->getSetting<AccelCurve>(SettingID::ACCEL_CURVE);
+
+	// Curve-specific parameters
+	const float naturalVHalf = jc->getSetting(SettingID::ACCEL_NATURAL_VHALF);
+	const float powerScale = jc->getSetting(SettingID::ACCEL_POWER_SCALE);
+	const float powerExponent = jc->getSetting(SettingID::ACCEL_POWER_EXPONENT);
+	const float powerOffset = jc->getSetting(SettingID::ACCEL_POWER_OFFSET);
+	const float sigmoidMid = jc->getSetting(SettingID::ACCEL_SIGMOID_MID);
+	const float sigmoidWidth = jc->getSetting(SettingID::ACCEL_SIGMOID_WIDTH);
+	const float jumpTau = jc->getSetting(SettingID::ACCEL_JUMP_TAU);
 
 	// apply calibration factor
 	// get input velocity
 	float omega = sqrt(gyroX * gyroX + gyroY * gyroY);
-	float magnitude = omega;
-	// COUT << "Gyro mag: " << setprecision(4) << magnitude << '\n';
 	// calculate position on minThreshold to maxThreshold scale
 	float minThreshold = jc->getSetting(SettingID::MIN_GYRO_THRESHOLD);
 	float maxThreshold = jc->getSetting(SettingID::MAX_GYRO_THRESHOLD);
-	magnitude -= minThreshold;
-	if (magnitude < 0.0f)
-		magnitude = 0.0f;
-	float denom = maxThreshold - minThreshold;
-	float newSensitivity = 0.0f;
-	float normalizedPreCurve = 0.0f;
-	if (denom <= 0.0f)
-	{
-		newSensitivity =
-		  magnitude > 0.0f ? 1.0f : 0.0f; // if min threshold overlaps max threshold, pop up to
-		                                  // max lowSens as soon as we're above min threshold
-		normalizedPreCurve = newSensitivity;
-	}
-	else
-	{
-		newSensitivity = magnitude / denom;
-		normalizedPreCurve = std::clamp((omega - minThreshold) / denom, 0.0f, 1.0f);
-	}
-	if (newSensitivity > 1.0f)
-		newSensitivity = 1.0f;
+	const float omegaAdjusted = std::max(0.0f, omega - minThreshold);
+	const float denom = maxThreshold - minThreshold;
+	float normalizedPreCurve = (denom > 0.0f) ? std::clamp(omegaAdjusted / denom, 0.0f, 1.0f)
+	                                          : (omegaAdjusted > 0.0f ? 1.0f : 0.0f);
 
-	// interpolate between low sensitivity and high sensitivity
-	float appliedSensX = lowSensXY.first * (1.0f - newSensitivity) + hiSensXY.first * newSensitivity;
-	float appliedSensY = lowSensXY.second * (1.0f - newSensitivity) + hiSensXY.second * newSensitivity;
+	float appliedSensX = 0.0f;
+	float appliedSensY = 0.0f;
+	float normalizedPostCurve = normalizedPreCurve;
+
+	switch (accelCurve)
+	{
+	case AccelCurve::NATURAL:
+		appliedSensX = NaturalSensitivity(omegaAdjusted, lowSensXY.first, hiSensXY.first, naturalVHalf);
+		appliedSensY = NaturalSensitivity(omegaAdjusted, lowSensXY.second, hiSensXY.second, naturalVHalf);
+		break;
+	case AccelCurve::POWER:
+		appliedSensX = PowerSensitivity(omegaAdjusted, powerScale, powerExponent, powerOffset);
+		appliedSensY = PowerSensitivity(omegaAdjusted, powerScale, powerExponent, powerOffset);
+		break;
+	case AccelCurve::QUADRATIC:
+		appliedSensX = QuadraticSensitivity(omegaAdjusted, lowSensXY.first, hiSensXY.first, maxThreshold);
+		appliedSensY = QuadraticSensitivity(omegaAdjusted, lowSensXY.second, hiSensXY.second, maxThreshold);
+		break;
+	case AccelCurve::SIGMOID:
+		appliedSensX = SigmoidSensitivity(omegaAdjusted, lowSensXY.first, hiSensXY.first, sigmoidMid, sigmoidWidth);
+		appliedSensY = SigmoidSensitivity(omegaAdjusted, lowSensXY.second, hiSensXY.second, sigmoidMid, sigmoidWidth);
+		break;
+	case AccelCurve::JUMP:
+		appliedSensX = JumpSensitivity(omegaAdjusted, lowSensXY.first, hiSensXY.first, maxThreshold, jumpTau);
+		appliedSensY = JumpSensitivity(omegaAdjusted, lowSensXY.second, hiSensXY.second, maxThreshold, jumpTau);
+		break;
+	case AccelCurve::LINEAR:
+	case AccelCurve::INVALID:
+	default: {
+		const float t = normalizedPreCurve;
+		appliedSensX = lowSensXY.first * (1.0f - t) + hiSensXY.first * t;
+		appliedSensY = lowSensXY.second * (1.0f - t) + hiSensXY.second * t;
+		normalizedPostCurve = t;
+		break;
+	}
+	}
+
+	// Map post-curve sensitivities back to 0..1 for telemetry
+	const auto normalizeSens = [](float sens, float sMin, float sMax) -> float {
+		const float denom = sMax - sMin;
+		if (denom <= 0.0f)
+			return 0.0f;
+		return std::clamp((sens - sMin) / denom, 0.0f, 1.0f);
+	};
+	normalizedPostCurve = std::max(normalizeSens(appliedSensX, lowSensXY.first, hiSensXY.first),
+	  normalizeSens(appliedSensY, lowSensXY.second, hiSensXY.second));
+
 	gyroXVelocity *= appliedSensX;
 	gyroYVelocity *= appliedSensY;
 
 	TelemetrySample telemetrySample;
 	telemetrySample.omega = omega;
-	telemetrySample.normalized = normalizedPreCurve;
-	telemetrySample.normalizedPostCurve = newSensitivity;
+	// Report post-curve normalized value so the live dot follows the selected curve
+	telemetrySample.normalized = normalizedPostCurve;
 	telemetrySample.sensX = appliedSensX;
 	telemetrySample.sensY = appliedSensY;
 	telemetrySample.minThreshold = minThreshold;
@@ -2327,6 +2368,54 @@ void initJsmSettings(CmdRegistry *commandRegistry)
 	SettingsManager::add(max_gyro_threshold);
 	commandRegistry->add((new JSMAssignment<float>(*max_gyro_threshold))
 	                       ->setHelp("Degrees per second at and above which to apply maximum gyro sensitivity."));
+
+	auto accel_curve = new JSMSetting<AccelCurve>(SettingID::ACCEL_CURVE, AccelCurve::LINEAR);
+	accel_curve->setFilter(&filterInvalidValue<AccelCurve, AccelCurve::INVALID>);
+	SettingsManager::add(accel_curve);
+	commandRegistry->add((new JSMAssignment<AccelCurve>("ACCEL_CURVE", *accel_curve))
+	                       ->setHelp("Selects gyro acceleration curve. Options: LINEAR (default), NATURAL, POWER, QUADRATIC, SIGMOID, JUMP."));
+
+	auto accel_natural_vhalf = new JSMSetting<float>(SettingID::ACCEL_NATURAL_VHALF, 200.0f);
+	accel_natural_vhalf->setFilter(&filterPositive);
+	SettingsManager::add(accel_natural_vhalf);
+	commandRegistry->add((new JSMAssignment<float>(*accel_natural_vhalf))
+	                       ->setHelp("Natural curve: velocity at which sensitivity reaches midpoint between MIN_GYRO_SENS and MAX_GYRO_SENS."));
+
+	auto accel_power_scale = new JSMSetting<float>(SettingID::ACCEL_POWER_SCALE, 0.01f);
+	accel_power_scale->setFilter(&filterPositive);
+	SettingsManager::add(accel_power_scale);
+	commandRegistry->add((new JSMAssignment<float>(*accel_power_scale))
+	                       ->setHelp("Power curve: scale applied to gyro speed before exponent."));
+
+	auto accel_power_exponent = new JSMSetting<float>(SettingID::ACCEL_POWER_EXPONENT, 0.5f);
+	accel_power_exponent->setFilter(&filterPositive);
+	SettingsManager::add(accel_power_exponent);
+	commandRegistry->add((new JSMAssignment<float>(*accel_power_exponent))
+	                       ->setHelp("Power curve: exponent applied to scaled gyro speed."));
+
+	auto accel_power_offset = new JSMSetting<float>(SettingID::ACCEL_POWER_OFFSET, 0.0f);
+	accel_power_offset->setFilter(&filterFloat);
+	SettingsManager::add(accel_power_offset);
+	commandRegistry->add((new JSMAssignment<float>(*accel_power_offset))
+	                       ->setHelp("Power curve: offset added after the power term."));
+
+	auto accel_sigmoid_mid = new JSMSetting<float>(SettingID::ACCEL_SIGMOID_MID, 20.0f);
+	accel_sigmoid_mid->setFilter(&filterPositive);
+	SettingsManager::add(accel_sigmoid_mid);
+	commandRegistry->add((new JSMAssignment<float>(*accel_sigmoid_mid))
+	                       ->setHelp("Sigmoid curve: input speed at the midpoint between MIN_GYRO_SENS and MAX_GYRO_SENS."));
+
+	auto accel_sigmoid_width = new JSMSetting<float>(SettingID::ACCEL_SIGMOID_WIDTH, 8.0f);
+	accel_sigmoid_width->setFilter(&filterPositive);
+	SettingsManager::add(accel_sigmoid_width);
+	commandRegistry->add((new JSMAssignment<float>(*accel_sigmoid_width))
+	                       ->setHelp("Sigmoid curve: width/steepness; larger values give gentler transitions."));
+
+	auto accel_jump_tau = new JSMSetting<float>(SettingID::ACCEL_JUMP_TAU, 1.5f);
+	accel_jump_tau->setFilter(&filterPositive);
+	SettingsManager::add(accel_jump_tau);
+	commandRegistry->add((new JSMAssignment<float>(*accel_jump_tau))
+	                       ->setHelp("Jump curve: rise length (smaller = steeper) before reaching peak sensitivity."));
 
 	auto stick_power = new JSMSetting<float>(SettingID::STICK_POWER, 1.0f);
 	stick_power->setFilter(&filterFloat);

@@ -1,5 +1,12 @@
 #pragma once
 
+#ifndef MAGIC_ENUM_RANGE_MIN
+#define MAGIC_ENUM_RANGE_MIN (-1)
+#endif
+#ifndef MAGIC_ENUM_RANGE_MAX
+#define MAGIC_ENUM_RANGE_MAX 512
+#endif
+
 #include "magic_enum.hpp"
 
 #include <map>
@@ -113,6 +120,14 @@ enum class SettingID
 	MAX_GYRO_SENS,
 	MIN_GYRO_THRESHOLD,
 	MAX_GYRO_THRESHOLD,
+	ACCEL_CURVE,
+	ACCEL_NATURAL_VHALF,
+	ACCEL_POWER_SCALE,
+	ACCEL_POWER_EXPONENT,
+	ACCEL_POWER_OFFSET,
+	ACCEL_SIGMOID_MID,
+	ACCEL_SIGMOID_WIDTH,
+	ACCEL_JUMP_TAU,
 	STICK_POWER,
 	STICK_SENS,
 	REAL_WORLD_CALIBRATION,
@@ -258,6 +273,17 @@ enum class GyroSpace
 	WORLD_TURN,
 	WORLD_LEAN,
 	INVALID
+};
+
+enum class AccelCurve
+{
+	INVALID = -1,
+	LINEAR = 0,
+	NATURAL,
+	POWER,
+	QUADRATIC,
+	SIGMOID,
+	JUMP,
 };
 enum class ControllerOrientation
 {
