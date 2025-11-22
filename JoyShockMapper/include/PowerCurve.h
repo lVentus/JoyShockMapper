@@ -2,7 +2,8 @@
 
 // Computes the "power" acceleration sensitivity curve.
 // omega: input speed (deg/sec or equivalent)
-// scale: multiplier applied to omega before exponentiation
+// sMin: minimum sensitivity
+// sMax: maximum sensitivity
+// vRef: reference speed that sets where the power curve begins to increase more aggressively
 // exponent: power applied to the scaled input
-// offset: value added after the power term
-float PowerSensitivity(float omega, float scale, float exponent, float offset);
+float PowerSensitivity(float omega, float sMin, float sMax, float vRef, float exponent);

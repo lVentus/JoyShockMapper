@@ -922,9 +922,8 @@ void joyShockPollCallback(int jcHandle, JOY_SHOCK_STATE state, JOY_SHOCK_STATE l
 
 	// Curve-specific parameters
 	const float naturalVHalf = jc->getSetting(SettingID::ACCEL_NATURAL_VHALF);
-	const float powerScale = jc->getSetting(SettingID::ACCEL_POWER_SCALE);
+	const float powervRef = jc->getSetting(SettingID::ACCEL_POWER_VREF);
 	const float powerExponent = jc->getSetting(SettingID::ACCEL_POWER_EXPONENT);
-	const float powerOffset = jc->getSetting(SettingID::ACCEL_POWER_OFFSET);
 	const float sigmoidMid = jc->getSetting(SettingID::ACCEL_SIGMOID_MID);
 	const float sigmoidWidth = jc->getSetting(SettingID::ACCEL_SIGMOID_WIDTH);
 	const float jumpTau = jc->getSetting(SettingID::ACCEL_JUMP_TAU);
@@ -951,8 +950,8 @@ void joyShockPollCallback(int jcHandle, JOY_SHOCK_STATE state, JOY_SHOCK_STATE l
 		appliedSensY = NaturalSensitivity(omegaAdjusted, lowSensXY.second, hiSensXY.second, naturalVHalf);
 		break;
 	case AccelCurve::POWER:
-		appliedSensX = PowerSensitivity(omegaAdjusted, powerScale, powerExponent, powerOffset);
-		appliedSensY = PowerSensitivity(omegaAdjusted, powerScale, powerExponent, powerOffset);
+		appliedSensX = PowerSensitivity(omegaAdjusted, lowSensXY.first, hiSensXY.first, powervRef, powerExponent);
+		appliedSensY = PowerSensitivity(omegaAdjusted, lowSensXY.second, hiSensXY.second, powervRef, powerExponent);
 		break;
 	case AccelCurve::QUADRATIC:
 		appliedSensX = QuadraticSensitivity(omegaAdjusted, lowSensXY.first, hiSensXY.first, maxThreshold);
@@ -2381,10 +2380,10 @@ void initJsmSettings(CmdRegistry *commandRegistry)
 	commandRegistry->add((new JSMAssignment<float>(*accel_natural_vhalf))
 	                       ->setHelp("Natural curve: velocity at which sensitivity reaches midpoint between MIN_GYRO_SENS and MAX_GYRO_SENS."));
 
-	auto accel_power_scale = new JSMSetting<float>(SettingID::ACCEL_POWER_SCALE, 0.01f);
-	accel_power_scale->setFilter(&filterPositive);
-	SettingsManager::add(accel_power_scale);
-	commandRegistry->add((new JSMAssignment<float>(*accel_power_scale))
+	auto accel_power_vref = new JSMSetting<float>(SettingID::ACCEL_POWER_VREF, 0.01f);
+	accel_power_vref->setFilter(&filterPositive);
+	SettingsManager::add(accel_power_vref);
+	commandRegistry->add((new JSMAssignment<float>(*accel_power_vref))
 	                       ->setHelp("Power curve: scale applied to gyro speed before exponent."));
 
 	auto accel_power_exponent = new JSMSetting<float>(SettingID::ACCEL_POWER_EXPONENT, 0.5f);
@@ -2392,12 +2391,6 @@ void initJsmSettings(CmdRegistry *commandRegistry)
 	SettingsManager::add(accel_power_exponent);
 	commandRegistry->add((new JSMAssignment<float>(*accel_power_exponent))
 	                       ->setHelp("Power curve: exponent applied to scaled gyro speed."));
-
-	auto accel_power_offset = new JSMSetting<float>(SettingID::ACCEL_POWER_OFFSET, 0.0f);
-	accel_power_offset->setFilter(&filterFloat);
-	SettingsManager::add(accel_power_offset);
-	commandRegistry->add((new JSMAssignment<float>(*accel_power_offset))
-	                       ->setHelp("Power curve: offset added after the power term."));
 
 	auto accel_sigmoid_mid = new JSMSetting<float>(SettingID::ACCEL_SIGMOID_MID, 20.0f);
 	accel_sigmoid_mid->setFilter(&filterPositive);
