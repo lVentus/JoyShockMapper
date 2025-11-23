@@ -1602,7 +1602,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
     <div className="app-frame">
       <div className="App legacy-shell">
         <header>
-          <h1>JoyShockMapper Gyro UI</h1>
+          <h1>JoyShockMapper Custom Curve</h1>
         </header>
 
         <div className="tab-bar">

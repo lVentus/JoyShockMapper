@@ -1,4 +1,4 @@
-# JoyShockMapper GUI
+# JoyShockMapper Custom Curve
 
 This repo bundles a modded JoyShockMapper build with a new GUI. For full JSM command documentation, see the upstream project: https://github.com/Electronicks/JoyShockMapper. JSM is robust and not every command is surfaced in the UI; the built-in config editor lets power users add anything that’s missing.
 

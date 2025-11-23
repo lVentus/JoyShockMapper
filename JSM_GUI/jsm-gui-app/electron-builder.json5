@@ -18,6 +18,7 @@
     "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
   },
   "win": {
+    "icon": "public/gyro-icon.ico",
     "target": [
       {
         "target": "nsis",
