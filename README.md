@@ -23,7 +23,9 @@ This repo bundles a modded JoyShockMapper build with a new GUI. For full JSM com
 - Stick controls: modes (Aim, Flick, Flick Only, Rotate Only, Mouse Area, Scroll Wheel, Hybrid Aim), ring modes, deadzones, aim/flick tuning, and modeshift stick mode assignments.
 - Per-device gyro ignore toggles.
 
-## Installation for devs (Windows only)
+## Installation for devs
+
+- Note: I only kept installation instructions for windows because I don't personally use Linux or know anything about development for Linux. If you're a developer who wants to add support for it feel free to do so.
 
 ### Build JoyShockMapper core
 ```bash
@@ -51,7 +53,3 @@ npm run build    # build + electron-builder package
 ## Links
 - Full JSM documentation: https://github.com/Electronicks/JoyShockMapper
 - GyroWiki: http://gyrowiki.jibbsmart.com
-
-## Known limitations
-- Windows-only; Linux is not supported in this fork.
-- Not all JSM features are exposed in the UI—use the config editor pane for advanced commands.
