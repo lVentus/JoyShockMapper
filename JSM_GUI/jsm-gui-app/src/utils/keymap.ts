@@ -7,6 +7,7 @@ export interface SensitivityValues {
   powerExponent?: number
   sigmoidMid?: number
   sigmoidWidth?: number
+  jumpTau?: number
   minSensX?: number
   minSensY?: number
   maxSensX?: number
@@ -59,6 +60,7 @@ export function parseSensitivityValues(text: string, options?: { prefix?: string
   const powerExponent = single('ACCEL_POWER_EXPONENT')
   const sigmoidMid = single('ACCEL_SIGMOID_MID')
   const sigmoidWidth = single('ACCEL_SIGMOID_WIDTH')
+  const jumpTau = single('ACCEL_JUMP_TAU')
   const minSens = get('MIN_GYRO_SENS', 2)
   const maxSens = get('MAX_GYRO_SENS', 2)
   const staticSens = get('GYRO_SENS', 2)
@@ -88,6 +90,7 @@ export function parseSensitivityValues(text: string, options?: { prefix?: string
     powerExponent,
     sigmoidMid,
     sigmoidWidth,
+    jumpTau,
   }
 
   if (result.gyroSensX !== undefined) {

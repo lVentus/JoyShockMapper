@@ -8,6 +8,7 @@ type AccelSensFormProps = {
   onPowerExponentChange: (value: string) => void
   onSigmoidMidChange: (value: string) => void
   onSigmoidWidthChange: (value: string) => void
+  onJumpTauChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -24,6 +25,7 @@ export function AccelSensForm({
   onPowerExponentChange,
   onSigmoidMidChange,
   onSigmoidWidthChange,
+  onJumpTauChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -35,11 +37,13 @@ export function AccelSensForm({
   const isNatural = curveValue === 'NATURAL'
   const isPower = curveValue === 'POWER'
   const isSigmoid = curveValue === 'SIGMOID'
+  const isJump = curveValue === 'JUMP'
   const vHalfValue = sensitivity.naturalVHalf ?? ''
   const powerVRefValue = sensitivity.powerVRef ?? ''
   const powerExponentValue = sensitivity.powerExponent ?? ''
   const sigmoidMidValue = sensitivity.sigmoidMid ?? ''
   const sigmoidWidthValue = sensitivity.sigmoidWidth ?? ''
+  const jumpTauValue = sensitivity.jumpTau ?? ''
 
   const minSensXValue = sensitivity.minSensX ?? ''
   const minSensYValue = sensitivity.minSensY ?? sensitivity.minSensX ?? ''
@@ -60,6 +64,7 @@ export function AccelSensForm({
             <option value="POWER">Power</option>
             <option value="SIGMOID">Sigmoid</option>
             <option value="QUADRATIC">Quadratic</option>
+            <option value="JUMP">Jump</option>
           </select>
         </label>
       </div>
@@ -110,7 +115,7 @@ export function AccelSensForm({
               value={vHalfValue || 0}
               onChange={(e) => onNaturalVHalfChange(e.target.value)}
             />
-          </label>
+            </label>
         ) : isSigmoid ? (
           <>
             <label>
@@ -148,6 +153,32 @@ export function AccelSensForm({
                 value={sigmoidWidthValue || 0}
                 onChange={(e) => onSigmoidWidthChange(e.target.value)}
               />
+            </label>
+          </>
+        ) : isJump ? (
+          <>
+            <label>
+              Jump tau (smoothness)
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={jumpTauValue}
+                onChange={(e) => onJumpTauChange(e.target.value)}
+              />
+              <input
+                type="range"
+                min="0"
+                max="500"
+                step="0.1"
+                value={jumpTauValue || 0}
+                onChange={(e) => onJumpTauChange(e.target.value)}
+              />
+            </label>
+            <label>
+              Max Threshold (jump point)
+              <input type="number" step="1" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
+              <input type="range" min="0" max="500" step="1" value={sensitivity.maxThreshold ?? 0} onChange={(e) => onMaxThresholdChange(e.target.value)} />
             </label>
           </>
         ) : isPower ? (

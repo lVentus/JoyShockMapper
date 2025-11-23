@@ -54,6 +54,7 @@ const SENS_MODE_KEYS = [
   'ACCEL_POWER_EXPONENT',
   'ACCEL_SIGMOID_MID',
   'ACCEL_SIGMOID_WIDTH',
+  'ACCEL_JUMP_TAU',
 ] as const
 const prefixedKey = (key: string, prefix?: string) => (prefix ? `${prefix}${key}` : key)
 
@@ -412,6 +413,9 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
           if (base.sigmoidWidth !== undefined) {
             next = updateKeymapEntry(next, `${nextButton},ACCEL_SIGMOID_WIDTH`, [base.sigmoidWidth])
           }
+          if (base.jumpTau !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},ACCEL_JUMP_TAU`, [base.jumpTau])
+          }
         }
       }
       return next
@@ -766,6 +770,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
         'ACCEL_POWER_EXPONENT',
         'ACCEL_SIGMOID_MID',
         'ACCEL_SIGMOID_WIDTH',
+        'ACCEL_JUMP_TAU',
       ].forEach(
         key => {
         next = removeKeymapEntry(next, prefixedKey(key, prefix))
@@ -787,23 +792,33 @@ const handleDeleteLibraryProfile = async (name: string) => {
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
+          next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_JUMP_TAU'))
           return next
         }
-        if (upper === 'NATURAL' || upper === 'POWER' || upper === 'QUADRATIC' || upper === 'SIGMOID') {
+        if (upper === 'NATURAL' || upper === 'POWER' || upper === 'QUADRATIC' || upper === 'SIGMOID' || upper === 'JUMP') {
           next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), [upper])
           if (upper === 'NATURAL') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_JUMP_TAU'))
           } else if (upper === 'POWER') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_JUMP_TAU'))
           } else if (upper === 'SIGMOID') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_JUMP_TAU'))
+          } else if (upper === 'JUMP') {
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
           } else {
             // Quadratic and other threshold-based curves
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
@@ -811,6 +826,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_JUMP_TAU'))
           }
         }
         return next
@@ -868,6 +884,28 @@ const handleDeleteLibraryProfile = async (name: string) => {
         let next = updateKeymapEntry(prev, resolveSensitivityKey('ACCEL_POWER_EXPONENT'), [parsed])
         next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), ['POWER'])
         next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+        return next
+      })
+    },
+    [resolveSensitivityKey]
+  )
+
+  const handleJumpTauChange = useCallback(
+    (value: string) => {
+      if (value === '') {
+        setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey('ACCEL_JUMP_TAU')))
+        return
+      }
+      const parsed = parseFloat(value)
+      if (!Number.isFinite(parsed) || parsed < 0) return
+      setConfigText(prev => {
+        let next = updateKeymapEntry(prev, resolveSensitivityKey('ACCEL_JUMP_TAU'), [parsed])
+        next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), ['JUMP'])
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
         return next
       })
     },
@@ -939,6 +977,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
       next = removeKeymapEntry(next, prefixedKey('ACCEL_POWER_EXPONENT', prefix))
       next = removeKeymapEntry(next, prefixedKey('ACCEL_SIGMOID_MID', prefix))
       next = removeKeymapEntry(next, prefixedKey('ACCEL_SIGMOID_WIDTH', prefix))
+      next = removeKeymapEntry(next, prefixedKey('ACCEL_JUMP_TAU', prefix))
       return next
     })
   }
@@ -1653,6 +1692,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
               powerExponent={sensitivity.powerExponent}
               sigmoidMid={sensitivity.sigmoidMid}
               sigmoidWidth={sensitivity.sigmoidWidth}
+              jumpTau={sensitivity.jumpTau}
               mode={currentMode}
               sensitivityView={sensitivityView}
               hasPendingChanges={hasPendingChanges}
@@ -1674,6 +1714,7 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onPowerExponentChange={handlePowerExponentChange}
               onSigmoidMidChange={handleSigmoidMidChange}
               onSigmoidWidthChange={handleSigmoidWidthChange}
+              onJumpTauChange={handleJumpTauChange}
               onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
               onMaxThresholdChange={handleThresholdChange('MAX_GYRO_THRESHOLD')}
               onMinSensXChange={handleDualSensChange('MIN_GYRO_SENS', 0)}

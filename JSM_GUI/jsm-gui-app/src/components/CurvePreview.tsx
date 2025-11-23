@@ -16,7 +16,7 @@ type CurvePreviewProps = {
 
 export function CurvePreview({ sensitivity, sample, hasPendingChanges, telemetry }: CurvePreviewProps) {
   const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
-  const curveType = (sensitivity.accelCurve ?? 'LINEAR').toUpperCase() as 'LINEAR' | 'NATURAL' | 'POWER' | 'QUADRATIC' | 'SIGMOID'
+  const curveType = (sensitivity.accelCurve ?? 'LINEAR').toUpperCase() as 'LINEAR' | 'NATURAL' | 'POWER' | 'QUADRATIC' | 'SIGMOID' | 'JUMP'
   return (
     <div className="graph-panel">
       <div className="graph-legend">
@@ -36,6 +36,7 @@ export function CurvePreview({ sensitivity, sample, hasPendingChanges, telemetry
         powerExponent={sensitivity.powerExponent}
         sigmoidMid={sensitivity.sigmoidMid}
         sigmoidWidth={sensitivity.sigmoidWidth}
+        jumpTau={sensitivity.jumpTau}
         normalized={asNumber(sample?.t)}
         currentSensX={asNumber(sample?.sensX)}
         omega={asNumber(sample?.omega)}

@@ -18,6 +18,7 @@ type SensitivityControlsProps = {
   powerExponent?: number
   sigmoidMid?: number
   sigmoidWidth?: number
+  jumpTau?: number
   mode: 'static' | 'accel'
   sensitivityView: 'base' | 'modeshift'
   hasPendingChanges: boolean
@@ -40,6 +41,7 @@ type SensitivityControlsProps = {
   onPowerExponentChange: (value: string) => void
   onSigmoidMidChange: (value: string) => void
   onSigmoidWidthChange: (value: string) => void
+  onJumpTauChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -63,6 +65,7 @@ export function SensitivityControls({
   powerExponent,
   sigmoidMid,
   sigmoidWidth,
+  jumpTau,
   mode,
   sensitivityView,
   hasPendingChanges,
@@ -80,6 +83,7 @@ export function SensitivityControls({
   onPowerExponentChange,
   onSigmoidMidChange,
   onSigmoidWidthChange,
+  onJumpTauChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -159,6 +163,7 @@ export function SensitivityControls({
           onPowerExponentChange={onPowerExponentChange}
           onSigmoidMidChange={onSigmoidMidChange}
           onSigmoidWidthChange={onSigmoidWidthChange}
+          onJumpTauChange={onJumpTauChange}
           onMinThresholdChange={onMinThresholdChange}
           onMaxThresholdChange={onMaxThresholdChange}
           onMinSensXChange={onMinSensXChange}
