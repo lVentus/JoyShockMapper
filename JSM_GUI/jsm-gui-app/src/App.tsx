@@ -434,7 +434,7 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
       return
     }
     const next = parseFloat(value)
-    if (Number.isNaN(next)) return
+    if (Number.isNaN(next) || next < 0) return
     setConfigText(prev => updateKeymapEntry(prev, resolveSensitivityKey(key), [next]))
   }
 
@@ -508,7 +508,7 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
       return
     }
     const next = parseFloat(value)
-    if (Number.isNaN(next)) return
+    if (Number.isNaN(next) || next < 0) return
     setConfigText(prev => {
       const parsed = parseSensitivityValues(prev, activeSensitivityPrefix ? { prefix: activeSensitivityPrefix } : undefined)
       const current =
@@ -526,7 +526,7 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
       return
     }
     const next = parseFloat(value)
-    if (Number.isNaN(next)) return
+    if (Number.isNaN(next) || next < 0) return
     setConfigText(prev => {
       const parsed = parseSensitivityValues(prev, activeSensitivityPrefix ? { prefix: activeSensitivityPrefix } : undefined)
       const current: [number, number] = [

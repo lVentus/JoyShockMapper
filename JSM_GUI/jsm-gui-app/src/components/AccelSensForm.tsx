@@ -71,29 +71,29 @@ export function AccelSensForm({
       <div className="flex-inputs">
         <label>
           Min Sens (X)
-          <input type="number" step="0.1" value={minSensXValue} onChange={(e) => onMinSensXChange(e.target.value)} />
+          <input type="number" step="0.1" min="0" value={minSensXValue} onChange={(e) => onMinSensXChange(e.target.value)} />
           <input type="range" min="0" max="30" step="0.1" value={minSensXRange} onChange={(e) => onMinSensXChange(e.target.value)} />
         </label>
         <label>
           Min Sens (Y)
-          <input type="number" step="0.1" value={minSensYValue} onChange={(e) => onMinSensYChange(e.target.value)} />
+          <input type="number" step="0.1" min="0" value={minSensYValue} onChange={(e) => onMinSensYChange(e.target.value)} />
           <input type="range" min="0" max="30" step="0.1" value={minSensYRange} onChange={(e) => onMinSensYChange(e.target.value)} />
         </label>
         <label>
           Max Sens (X)
-          <input type="number" step="0.1" value={maxSensXValue} onChange={(e) => onMaxSensXChange(e.target.value)} />
+          <input type="number" step="0.1" min="0" value={maxSensXValue} onChange={(e) => onMaxSensXChange(e.target.value)} />
           <input type="range" min="0" max="30" step="0.1" value={maxSensXRange} onChange={(e) => onMaxSensXChange(e.target.value)} />
         </label>
         <label>
           Max Sens (Y)
-          <input type="number" step="0.1" value={maxSensYValue} onChange={(e) => onMaxSensYChange(e.target.value)} />
+          <input type="number" step="0.1" min="0" value={maxSensYValue} onChange={(e) => onMaxSensYChange(e.target.value)} />
           <input type="range" min="0" max="30" step="0.1" value={maxSensYRange} onChange={(e) => onMaxSensYChange(e.target.value)} />
         </label>
       </div>
       <div className="flex-inputs">
         <label>
           Min Threshold
-          <input type="number" step="1" value={sensitivity.minThreshold ?? ''} onChange={(e) => onMinThresholdChange(e.target.value)} />
+          <input type="number" step="1" min="0" value={sensitivity.minThreshold ?? ''} onChange={(e) => onMinThresholdChange(e.target.value)} />
           <input type="range" min="0" max="500" step="1" value={sensitivity.minThreshold ?? 0} onChange={(e) => onMinThresholdChange(e.target.value)} />
         </label>
         {isNatural ? (
@@ -123,6 +123,7 @@ export function AccelSensForm({
               <input
                 type="number"
                 step="1"
+                min="0"
                 value={sigmoidMidValue}
                 onChange={(e) => onSigmoidMidChange(e.target.value)}
                 placeholder="deg/sec"
@@ -177,7 +178,7 @@ export function AccelSensForm({
             </label>
             <label>
               Max Threshold (jump point)
-              <input type="number" step="1" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
+              <input type="number" step="1" min="0" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
               <input type="range" min="0" max="500" step="1" value={sensitivity.maxThreshold ?? 0} onChange={(e) => onMaxThresholdChange(e.target.value)} />
             </label>
           </>
@@ -224,7 +225,7 @@ export function AccelSensForm({
         ) : (
           <label>
             Max Threshold
-            <input type="number" step="1" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
+            <input type="number" step="1" min="0" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
             <input type="range" min="0" max="500" step="1" value={sensitivity.maxThreshold ?? 0} onChange={(e) => onMaxThresholdChange(e.target.value)} />
           </label>
         )}

@@ -223,7 +223,8 @@ body {
 }
 
 .stick-mode-card input[type='range'] {
-  margin-top: 0.45rem;
+  margin-top: 0.4rem;
+  accent-color: #6a8bff;
 }
 
 .stick-mode-extras {
