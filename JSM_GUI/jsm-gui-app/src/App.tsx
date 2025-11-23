@@ -42,7 +42,15 @@ const REQUIRED_HEADER_LINES = [
   { pattern: /^TELEMETRY_ENABLED\b/i, value: 'TELEMETRY_ENABLED = ON' },
   { pattern: /^TELEMETRY_PORT\b/i, value: 'TELEMETRY_PORT = 8974' },
 ]
-const SENS_MODE_KEYS = ['MIN_GYRO_THRESHOLD', 'MAX_GYRO_THRESHOLD', 'MIN_GYRO_SENS', 'MAX_GYRO_SENS', 'GYRO_SENS'] as const
+const SENS_MODE_KEYS = [
+  'MIN_GYRO_THRESHOLD',
+  'MAX_GYRO_THRESHOLD',
+  'MIN_GYRO_SENS',
+  'MAX_GYRO_SENS',
+  'GYRO_SENS',
+  'ACCEL_CURVE',
+  'ACCEL_NATURAL_VHALF',
+] as const
 const prefixedKey = (key: string, prefix?: string) => (prefix ? `${prefix}${key}` : key)
 
 const ensureHeaderLines = (text: string) => {
@@ -381,6 +389,12 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
           }
           if (base.maxThreshold !== undefined) {
             next = updateKeymapEntry(next, `${nextButton},MAX_GYRO_THRESHOLD`, [base.maxThreshold])
+          }
+          if (base.accelCurve) {
+            next = updateKeymapEntry(next, `${nextButton},ACCEL_CURVE`, [base.accelCurve])
+          }
+          if (base.naturalVHalf !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},ACCEL_NATURAL_VHALF`, [base.naturalVHalf])
           }
         }
       }
@@ -725,12 +739,51 @@ const handleDeleteLibraryProfile = async (name: string) => {
       const defaultX = values.minSensX ?? values.maxSensX ?? 1
       const defaultY = values.minSensY ?? values.minSensX ?? values.maxSensY ?? values.maxSensX ?? defaultX
       let next = updateKeymapEntry(prev, prefixedKey('GYRO_SENS', prefix), [defaultX, defaultY])
-      ;['MIN_GYRO_SENS', 'MAX_GYRO_SENS', 'MIN_GYRO_THRESHOLD', 'MAX_GYRO_THRESHOLD'].forEach(key => {
+      ;['MIN_GYRO_SENS', 'MAX_GYRO_SENS', 'MIN_GYRO_THRESHOLD', 'MAX_GYRO_THRESHOLD', 'ACCEL_CURVE', 'ACCEL_NATURAL_VHALF'].forEach(
+        key => {
         next = removeKeymapEntry(next, prefixedKey(key, prefix))
-      })
+        }
+      )
       return next
     })
   }
+
+  const handleAccelCurveChange = useCallback(
+    (value: string) => {
+      const upper = value.trim().toUpperCase()
+      setConfigText(prev => {
+        let next = prev
+        if (!upper || upper === 'LINEAR') {
+          next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'))
+          next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+          return next
+        }
+        if (upper === 'NATURAL') {
+          next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), [upper])
+          return next
+        }
+        return next
+      })
+    },
+    [resolveSensitivityKey]
+  )
+
+  const handleNaturalVHalfChange = useCallback(
+    (value: string) => {
+      if (value === '') {
+        setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey('ACCEL_NATURAL_VHALF')))
+        return
+      }
+      const parsed = parseFloat(value)
+      if (!Number.isFinite(parsed) || parsed <= 0) return
+      setConfigText(prev => {
+        let next = updateKeymapEntry(prev, resolveSensitivityKey('ACCEL_NATURAL_VHALF'), [parsed])
+        next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), ['NATURAL'])
+        return next
+      })
+    },
+    [resolveSensitivityKey]
+  )
 
   const switchToAccelMode = (prefix?: string) => {
     setConfigText(prev => {
@@ -751,6 +804,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
       ])
       next = updateKeymapEntry(next, prefixedKey('MIN_GYRO_THRESHOLD', prefix), [values.minThreshold ?? 0])
       next = updateKeymapEntry(next, prefixedKey('MAX_GYRO_THRESHOLD', prefix), [values.maxThreshold ?? 100])
+      next = updateKeymapEntry(next, prefixedKey('ACCEL_CURVE', prefix), ['LINEAR'])
+      next = removeKeymapEntry(next, prefixedKey('ACCEL_NATURAL_VHALF', prefix))
       return next
     })
   }
@@ -1459,6 +1514,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               modeshiftSensitivity={modeshiftSensitivity}
               isCalibrating={isCalibrating}
               statusMessage={statusMessage}
+              accelCurve={sensitivity.accelCurve}
+              naturalVHalf={sensitivity.naturalVHalf}
               mode={currentMode}
               sensitivityView={sensitivityView}
               hasPendingChanges={hasPendingChanges}
@@ -1474,6 +1531,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onSensitivityViewChange={setSensitivityView}
               onApply={applyConfig}
               onCancel={handleCancel}
+              onAccelCurveChange={handleAccelCurveChange}
+              onNaturalVHalfChange={handleNaturalVHalfChange}
               onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
               onMaxThresholdChange={handleThresholdChange('MAX_GYRO_THRESHOLD')}
               onMinSensXChange={handleDualSensChange('MIN_GYRO_SENS', 0)}

@@ -16,12 +16,12 @@ type CurvePreviewProps = {
 
 export function CurvePreview({ sensitivity, sample, hasPendingChanges, telemetry }: CurvePreviewProps) {
   const asNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
+  const curveType = (sensitivity.accelCurve ?? 'LINEAR').toUpperCase() as 'LINEAR' | 'NATURAL'
   return (
     <div className="graph-panel">
       <div className="graph-legend">
         <span><span className="legend-dot sensitivity" /> Sensitivity</span>
         <span><span className="legend-dot velocity" /> Normalized output velocity</span>
-        <span className="legend-curve">Curve: {sample?.curve ?? 'linear'}</span>
       </div>
       <SensitivityGraph
         minThreshold={sensitivity.minThreshold}
@@ -30,6 +30,8 @@ export function CurvePreview({ sensitivity, sample, hasPendingChanges, telemetry
         minSensY={sensitivity.minSensY}
         maxSensX={sensitivity.maxSensX}
         maxSensY={sensitivity.maxSensY}
+        curveType={curveType}
+        naturalVHalf={sensitivity.naturalVHalf}
         normalized={asNumber(sample?.t)}
         currentSensX={asNumber(sample?.sensX)}
         omega={asNumber(sample?.omega)}

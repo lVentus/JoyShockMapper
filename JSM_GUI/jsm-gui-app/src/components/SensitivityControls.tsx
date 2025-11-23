@@ -12,6 +12,8 @@ type SensitivityControlsProps = {
   modeshiftSensitivity?: SensitivityValues
   isCalibrating: boolean
   statusMessage?: string | null
+  accelCurve?: string
+  naturalVHalf?: number
   mode: 'static' | 'accel'
   sensitivityView: 'base' | 'modeshift'
   hasPendingChanges: boolean
@@ -28,6 +30,8 @@ type SensitivityControlsProps = {
   onSensitivityViewChange: (view: 'base' | 'modeshift') => void
   onApply: () => void
   onCancel: () => void
+  onAccelCurveChange: (value: string) => void
+  onNaturalVHalfChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -45,6 +49,8 @@ export function SensitivityControls({
   modeshiftSensitivity,
   isCalibrating,
   statusMessage,
+  accelCurve,
+  naturalVHalf,
   mode,
   sensitivityView,
   hasPendingChanges,
@@ -56,6 +62,8 @@ export function SensitivityControls({
   onSensitivityViewChange,
   onApply,
   onCancel,
+  onAccelCurveChange,
+  onNaturalVHalfChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -129,6 +137,8 @@ export function SensitivityControls({
       ) : (
         <AccelSensForm
           sensitivity={displaySensitivity}
+          onCurveChange={onAccelCurveChange}
+          onNaturalVHalfChange={onNaturalVHalfChange}
           onMinThresholdChange={onMinThresholdChange}
           onMaxThresholdChange={onMaxThresholdChange}
           onMinSensXChange={onMinSensXChange}

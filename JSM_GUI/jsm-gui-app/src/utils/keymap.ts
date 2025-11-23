@@ -1,6 +1,8 @@
 export interface SensitivityValues {
   inGameSens?: number
   realWorldCalibration?: number
+  accelCurve?: string
+  naturalVHalf?: number
   minSensX?: number
   minSensY?: number
   maxSensX?: number
@@ -46,6 +48,9 @@ export function parseSensitivityValues(text: string, options?: { prefix?: string
     const match = text.match(LINE_REGEX(keyWithPrefix(key)))
     return match?.[1]?.trim()
   }
+  const accelCurveRaw = raw('ACCEL_CURVE')
+  const accelCurve = accelCurveRaw ? accelCurveRaw.trim().toUpperCase() : undefined
+  const naturalVHalf = single('ACCEL_NATURAL_VHALF')
   const minSens = get('MIN_GYRO_SENS', 2)
   const maxSens = get('MAX_GYRO_SENS', 2)
   const staticSens = get('GYRO_SENS', 2)
@@ -69,6 +74,8 @@ export function parseSensitivityValues(text: string, options?: { prefix?: string
     gyroAxisX: raw('GYRO_AXIS_X'),
     gyroAxisY: raw('GYRO_AXIS_Y'),
     tickTime: single('TICK_TIME'),
+    accelCurve,
+    naturalVHalf,
   }
 
   if (result.gyroSensX !== undefined) {

@@ -2,6 +2,8 @@ import { SensitivityValues } from '../utils/keymap'
 
 type AccelSensFormProps = {
   sensitivity: SensitivityValues
+  onCurveChange: (value: string) => void
+  onNaturalVHalfChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -12,6 +14,8 @@ type AccelSensFormProps = {
 
 export function AccelSensForm({
   sensitivity,
+  onCurveChange,
+  onNaturalVHalfChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -19,6 +23,10 @@ export function AccelSensForm({
   onMaxSensXChange,
   onMaxSensYChange,
 }: AccelSensFormProps) {
+  const curveValue = (sensitivity.accelCurve ?? 'LINEAR').toUpperCase()
+  const isNatural = curveValue === 'NATURAL'
+  const vHalfValue = sensitivity.naturalVHalf ?? ''
+
   const minSensXValue = sensitivity.minSensX ?? ''
   const minSensYValue = sensitivity.minSensY ?? sensitivity.minSensX ?? ''
   const maxSensXValue = sensitivity.maxSensX ?? ''
@@ -29,6 +37,15 @@ export function AccelSensForm({
   const maxSensYRange = sensitivity.maxSensY ?? sensitivity.maxSensX ?? 0
   return (
     <>
+      <div className="flex-inputs">
+        <label>
+          Acceleration curve
+          <select value={curveValue} onChange={(e) => onCurveChange(e.target.value)}>
+            <option value="LINEAR">Linear</option>
+            <option value="NATURAL">Natural</option>
+          </select>
+        </label>
+      </div>
       <div className="flex-inputs">
         <label>
           Min Sens (X)
@@ -57,11 +74,33 @@ export function AccelSensForm({
           <input type="number" step="1" value={sensitivity.minThreshold ?? ''} onChange={(e) => onMinThresholdChange(e.target.value)} />
           <input type="range" min="0" max="500" step="1" value={sensitivity.minThreshold ?? 0} onChange={(e) => onMinThresholdChange(e.target.value)} />
         </label>
-        <label>
-          Max Threshold
-          <input type="number" step="1" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
-          <input type="range" min="0" max="500" step="1" value={sensitivity.maxThreshold ?? 0} onChange={(e) => onMaxThresholdChange(e.target.value)} />
-        </label>
+        {isNatural ? (
+          <label>
+            Natural midpoint (vHalf)
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={vHalfValue}
+              onChange={(e) => onNaturalVHalfChange(e.target.value)}
+              placeholder="deg/sec"
+            />
+            <input
+              type="range"
+              min="1"
+              max="500"
+              step="1"
+              value={vHalfValue || 0}
+              onChange={(e) => onNaturalVHalfChange(e.target.value)}
+            />
+          </label>
+        ) : (
+          <label>
+            Max Threshold
+            <input type="number" step="1" value={sensitivity.maxThreshold ?? ''} onChange={(e) => onMaxThresholdChange(e.target.value)} />
+            <input type="range" min="0" max="500" step="1" value={sensitivity.maxThreshold ?? 0} onChange={(e) => onMaxThresholdChange(e.target.value)} />
+          </label>
+        )}
       </div>
     </>
   )
