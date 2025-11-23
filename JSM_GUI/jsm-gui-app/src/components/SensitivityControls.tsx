@@ -16,6 +16,8 @@ type SensitivityControlsProps = {
   naturalVHalf?: number
   powerVRef?: number
   powerExponent?: number
+  sigmoidMid?: number
+  sigmoidWidth?: number
   mode: 'static' | 'accel'
   sensitivityView: 'base' | 'modeshift'
   hasPendingChanges: boolean
@@ -36,6 +38,8 @@ type SensitivityControlsProps = {
   onNaturalVHalfChange: (value: string) => void
   onPowerVRefChange: (value: string) => void
   onPowerExponentChange: (value: string) => void
+  onSigmoidMidChange: (value: string) => void
+  onSigmoidWidthChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -57,6 +61,8 @@ export function SensitivityControls({
   naturalVHalf,
   powerVRef,
   powerExponent,
+  sigmoidMid,
+  sigmoidWidth,
   mode,
   sensitivityView,
   hasPendingChanges,
@@ -72,6 +78,8 @@ export function SensitivityControls({
   onNaturalVHalfChange,
   onPowerVRefChange,
   onPowerExponentChange,
+  onSigmoidMidChange,
+  onSigmoidWidthChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -149,6 +157,8 @@ export function SensitivityControls({
           onNaturalVHalfChange={onNaturalVHalfChange}
           onPowerVRefChange={onPowerVRefChange}
           onPowerExponentChange={onPowerExponentChange}
+          onSigmoidMidChange={onSigmoidMidChange}
+          onSigmoidWidthChange={onSigmoidWidthChange}
           onMinThresholdChange={onMinThresholdChange}
           onMaxThresholdChange={onMaxThresholdChange}
           onMinSensXChange={onMinSensXChange}

@@ -5,6 +5,8 @@ export interface SensitivityValues {
   naturalVHalf?: number
   powerVRef?: number
   powerExponent?: number
+  sigmoidMid?: number
+  sigmoidWidth?: number
   minSensX?: number
   minSensY?: number
   maxSensX?: number
@@ -55,6 +57,8 @@ export function parseSensitivityValues(text: string, options?: { prefix?: string
   const naturalVHalf = single('ACCEL_NATURAL_VHALF')
   const powerVRef = single('ACCEL_POWER_VREF')
   const powerExponent = single('ACCEL_POWER_EXPONENT')
+  const sigmoidMid = single('ACCEL_SIGMOID_MID')
+  const sigmoidWidth = single('ACCEL_SIGMOID_WIDTH')
   const minSens = get('MIN_GYRO_SENS', 2)
   const maxSens = get('MAX_GYRO_SENS', 2)
   const staticSens = get('GYRO_SENS', 2)
@@ -82,6 +86,8 @@ export function parseSensitivityValues(text: string, options?: { prefix?: string
     naturalVHalf,
     powerVRef,
     powerExponent,
+    sigmoidMid,
+    sigmoidWidth,
   }
 
   if (result.gyroSensX !== undefined) {

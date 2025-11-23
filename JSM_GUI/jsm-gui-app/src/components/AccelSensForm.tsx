@@ -6,6 +6,8 @@ type AccelSensFormProps = {
   onNaturalVHalfChange: (value: string) => void
   onPowerVRefChange: (value: string) => void
   onPowerExponentChange: (value: string) => void
+  onSigmoidMidChange: (value: string) => void
+  onSigmoidWidthChange: (value: string) => void
   onMinThresholdChange: (value: string) => void
   onMaxThresholdChange: (value: string) => void
   onMinSensXChange: (value: string) => void
@@ -20,6 +22,8 @@ export function AccelSensForm({
   onNaturalVHalfChange,
   onPowerVRefChange,
   onPowerExponentChange,
+  onSigmoidMidChange,
+  onSigmoidWidthChange,
   onMinThresholdChange,
   onMaxThresholdChange,
   onMinSensXChange,
@@ -30,9 +34,12 @@ export function AccelSensForm({
   const curveValue = (sensitivity.accelCurve ?? 'LINEAR').toUpperCase()
   const isNatural = curveValue === 'NATURAL'
   const isPower = curveValue === 'POWER'
+  const isSigmoid = curveValue === 'SIGMOID'
   const vHalfValue = sensitivity.naturalVHalf ?? ''
   const powerVRefValue = sensitivity.powerVRef ?? ''
   const powerExponentValue = sensitivity.powerExponent ?? ''
+  const sigmoidMidValue = sensitivity.sigmoidMid ?? ''
+  const sigmoidWidthValue = sensitivity.sigmoidWidth ?? ''
 
   const minSensXValue = sensitivity.minSensX ?? ''
   const minSensYValue = sensitivity.minSensY ?? sensitivity.minSensX ?? ''
@@ -51,6 +58,7 @@ export function AccelSensForm({
             <option value="LINEAR">Linear</option>
             <option value="NATURAL">Natural</option>
             <option value="POWER">Power</option>
+            <option value="SIGMOID">Sigmoid</option>
             <option value="QUADRATIC">Quadratic</option>
           </select>
         </label>
@@ -103,6 +111,45 @@ export function AccelSensForm({
               onChange={(e) => onNaturalVHalfChange(e.target.value)}
             />
           </label>
+        ) : isSigmoid ? (
+          <>
+            <label>
+              Sigmoid midpoint (vMid)
+              <input
+                type="number"
+                step="1"
+                value={sigmoidMidValue}
+                onChange={(e) => onSigmoidMidChange(e.target.value)}
+                placeholder="deg/sec"
+              />
+              <input
+                type="range"
+                min="0"
+                max="1000"
+                step="1"
+                value={sigmoidMidValue || 0}
+                onChange={(e) => onSigmoidMidChange(e.target.value)}
+              />
+            </label>
+            <label>
+              Sigmoid width
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={sigmoidWidthValue}
+                onChange={(e) => onSigmoidWidthChange(e.target.value)}
+              />
+              <input
+                type="range"
+                min="0.1"
+                max="500"
+                step="0.1"
+                value={sigmoidWidthValue || 0}
+                onChange={(e) => onSigmoidWidthChange(e.target.value)}
+              />
+            </label>
+          </>
         ) : isPower ? (
           <>
             <label>

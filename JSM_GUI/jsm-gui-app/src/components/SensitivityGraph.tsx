@@ -7,10 +7,12 @@ interface SensitivityGraphProps {
   maxSensX?: number
   minSensY?: number
   maxSensY?: number
-  curveType?: 'LINEAR' | 'NATURAL' | 'POWER' | 'QUADRATIC'
+  curveType?: 'LINEAR' | 'NATURAL' | 'POWER' | 'QUADRATIC' | 'SIGMOID'
   naturalVHalf?: number
   powerVRef?: number
   powerExponent?: number
+  sigmoidMid?: number
+  sigmoidWidth?: number
   normalized?: number
   currentSensX?: number
   omega?: number
@@ -36,6 +38,8 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
   naturalVHalf,
   powerVRef,
   powerExponent,
+  sigmoidMid,
+  sigmoidWidth,
   normalized,
   currentSensX,
   omega,
@@ -68,6 +72,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     const isNatural = curveType === 'NATURAL'
     const isPower = curveType === 'POWER'
     const isQuadratic = curveType === 'QUADRATIC'
+    const isSigmoid = curveType === 'SIGMOID'
 
     const hasThresholdInputs =
       minThreshold !== undefined && maxThreshold !== undefined && minSensX !== undefined && maxSensX !== undefined
@@ -81,11 +86,19 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       powerVRef > 0 &&
       powerExponent !== undefined &&
       powerExponent > 0
+    const hasSigmoidInputs =
+      minThreshold !== undefined &&
+      minSensX !== undefined &&
+      maxSensX !== undefined &&
+      sigmoidMid !== undefined &&
+      sigmoidWidth !== undefined &&
+      sigmoidWidth > 0
 
     if (
       (isNatural && !hasNaturalInputs) ||
       (isPower && !hasPowerInputs) ||
       (isQuadratic && !hasThresholdInputs) ||
+      (isSigmoid && !hasSigmoidInputs) ||
       (!isNatural && !isPower && !isQuadratic && !hasThresholdInputs)
     ) {
       ctx.fillStyle = '#777'
@@ -112,7 +125,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     ctx.fillText('RWS', 0, 0)
     ctx.restore()
 
-    const axisMaxX = Math.max(MAX_OMEGA, maxThreshold ?? 0, powerVRef ?? 0)
+    const axisMaxX = Math.max(MAX_OMEGA, maxThreshold ?? 0, powerVRef ?? 0, (sigmoidMid ?? 0) + (sigmoidWidth ?? 0))
     const axisMaxY = Math.max(minSensX, maxSensX, 2)
 
     const toX = (speed: number) => paddingLeft + (graphWidth * (speed / axisMaxX))
@@ -170,6 +183,23 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       return minSensX + (maxSensX - minSensX) * t
     }
 
+    const sigmoidSensitivityAt = (speed: number) => {
+      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
+      const vMid = sigmoidMid ?? 0
+      const width = sigmoidWidth ?? 0
+      const w = width > 0 ? width : 1e-6
+      const raw = (x: number) => {
+        const z = (x - vMid) / w
+        return 1 / (1 + Math.exp(-z))
+      }
+      const sigma = raw(omegaAdjusted)
+      const sigma0 = raw(0)
+      const denom = 1 - sigma0
+      let t = denom > 0 ? (sigma - sigma0) / denom : 0
+      t = clamp(t, 0, 1)
+      return minSensX + (maxSensX - minSensX) * t
+    }
+
     const sensitivityAt = (speed: number) => {
       if (isNatural) {
         return naturalSensitivityAt(speed)
@@ -179,6 +209,9 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       }
       if (isQuadratic) {
         return quadraticSensitivityAt(speed)
+      }
+      if (isSigmoid) {
+        return sigmoidSensitivityAt(speed)
       }
       const denom = (maxThreshold ?? 0) - (minThreshold ?? 0)
       if (denom <= 0) {
@@ -257,7 +290,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     }
 
     ctx.textAlign = 'center'
-  }, [minThreshold, maxThreshold, minSensX, minSensY, maxSensX, maxSensY, normalized, currentSensX, omega, disableLiveDot, curveType, naturalVHalf, powerVRef, powerExponent])
+  }, [minThreshold, maxThreshold, minSensX, minSensY, maxSensX, maxSensY, normalized, currentSensX, omega, disableLiveDot, curveType, naturalVHalf, powerVRef, powerExponent, sigmoidMid, sigmoidWidth])
 
   return <canvas ref={canvasRef} className="legacy-curve-canvas" />
 }

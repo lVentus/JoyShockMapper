@@ -52,6 +52,8 @@ const SENS_MODE_KEYS = [
   'ACCEL_NATURAL_VHALF',
   'ACCEL_POWER_VREF',
   'ACCEL_POWER_EXPONENT',
+  'ACCEL_SIGMOID_MID',
+  'ACCEL_SIGMOID_WIDTH',
 ] as const
 const prefixedKey = (key: string, prefix?: string) => (prefix ? `${prefix}${key}` : key)
 
@@ -403,6 +405,12 @@ const applyConfig = useCallback(async (options?: { profileNameOverride?: string;
           }
           if (base.powerExponent !== undefined) {
             next = updateKeymapEntry(next, `${nextButton},ACCEL_POWER_EXPONENT`, [base.powerExponent])
+          }
+          if (base.sigmoidMid !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},ACCEL_SIGMOID_MID`, [base.sigmoidMid])
+          }
+          if (base.sigmoidWidth !== undefined) {
+            next = updateKeymapEntry(next, `${nextButton},ACCEL_SIGMOID_WIDTH`, [base.sigmoidWidth])
           }
         }
       }
@@ -756,6 +764,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
         'ACCEL_NATURAL_VHALF',
         'ACCEL_POWER_VREF',
         'ACCEL_POWER_EXPONENT',
+        'ACCEL_SIGMOID_MID',
+        'ACCEL_SIGMOID_WIDTH',
       ].forEach(
         key => {
         next = removeKeymapEntry(next, prefixedKey(key, prefix))
@@ -775,20 +785,32 @@ const handleDeleteLibraryProfile = async (name: string) => {
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+          next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
+          next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
           return next
         }
-        if (upper === 'NATURAL' || upper === 'POWER' || upper === 'QUADRATIC') {
+        if (upper === 'NATURAL' || upper === 'POWER' || upper === 'QUADRATIC' || upper === 'SIGMOID') {
           next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), [upper])
           if (upper === 'NATURAL') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
           } else if (upper === 'POWER') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
+          } else if (upper === 'SIGMOID') {
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
           } else {
             // Quadratic and other threshold-based curves
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_MID'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'))
           }
         }
         return next
@@ -852,6 +874,46 @@ const handleDeleteLibraryProfile = async (name: string) => {
     [resolveSensitivityKey]
   )
 
+  const handleSigmoidMidChange = useCallback(
+    (value: string) => {
+      if (value === '') {
+        setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey('ACCEL_SIGMOID_MID')))
+        return
+      }
+      const parsed = parseFloat(value)
+      if (!Number.isFinite(parsed)) return
+      setConfigText(prev => {
+        let next = updateKeymapEntry(prev, resolveSensitivityKey('ACCEL_SIGMOID_MID'), [parsed])
+        next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), ['SIGMOID'])
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+        return next
+      })
+    },
+    [resolveSensitivityKey]
+  )
+
+  const handleSigmoidWidthChange = useCallback(
+    (value: string) => {
+      if (value === '') {
+        setConfigText(prev => removeKeymapEntry(prev, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH')))
+        return
+      }
+      const parsed = parseFloat(value)
+      if (!Number.isFinite(parsed) || parsed <= 0) return
+      setConfigText(prev => {
+        let next = updateKeymapEntry(prev, resolveSensitivityKey('ACCEL_SIGMOID_WIDTH'), [parsed])
+        next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), ['SIGMOID'])
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
+        next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
+        return next
+      })
+    },
+    [resolveSensitivityKey]
+  )
+
   const switchToAccelMode = (prefix?: string) => {
     setConfigText(prev => {
       const values = parseSensitivityValues(prev, prefix ? { prefix } : undefined)
@@ -875,6 +937,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
       next = removeKeymapEntry(next, prefixedKey('ACCEL_NATURAL_VHALF', prefix))
       next = removeKeymapEntry(next, prefixedKey('ACCEL_POWER_VREF', prefix))
       next = removeKeymapEntry(next, prefixedKey('ACCEL_POWER_EXPONENT', prefix))
+      next = removeKeymapEntry(next, prefixedKey('ACCEL_SIGMOID_MID', prefix))
+      next = removeKeymapEntry(next, prefixedKey('ACCEL_SIGMOID_WIDTH', prefix))
       return next
     })
   }
@@ -1587,6 +1651,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               naturalVHalf={sensitivity.naturalVHalf}
               powerVRef={sensitivity.powerVRef}
               powerExponent={sensitivity.powerExponent}
+              sigmoidMid={sensitivity.sigmoidMid}
+              sigmoidWidth={sensitivity.sigmoidWidth}
               mode={currentMode}
               sensitivityView={sensitivityView}
               hasPendingChanges={hasPendingChanges}
@@ -1606,6 +1672,8 @@ const handleDeleteLibraryProfile = async (name: string) => {
               onNaturalVHalfChange={handleNaturalVHalfChange}
               onPowerVRefChange={handlePowerVRefChange}
               onPowerExponentChange={handlePowerExponentChange}
+              onSigmoidMidChange={handleSigmoidMidChange}
+              onSigmoidWidthChange={handleSigmoidWidthChange}
               onMinThresholdChange={handleThresholdChange('MIN_GYRO_THRESHOLD')}
               onMaxThresholdChange={handleThresholdChange('MAX_GYRO_THRESHOLD')}
               onMinSensXChange={handleDualSensChange('MIN_GYRO_SENS', 0)}
