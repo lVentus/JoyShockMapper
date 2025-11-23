@@ -7,7 +7,7 @@ interface SensitivityGraphProps {
   maxSensX?: number
   minSensY?: number
   maxSensY?: number
-  curveType?: 'LINEAR' | 'NATURAL' | 'POWER'
+  curveType?: 'LINEAR' | 'NATURAL' | 'POWER' | 'QUADRATIC'
   naturalVHalf?: number
   powerVRef?: number
   powerExponent?: number
@@ -67,8 +67,9 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
 
     const isNatural = curveType === 'NATURAL'
     const isPower = curveType === 'POWER'
+    const isQuadratic = curveType === 'QUADRATIC'
 
-    const hasLinearInputs =
+    const hasThresholdInputs =
       minThreshold !== undefined && maxThreshold !== undefined && minSensX !== undefined && maxSensX !== undefined
     const hasNaturalInputs =
       minThreshold !== undefined && minSensX !== undefined && maxSensX !== undefined && naturalVHalf !== undefined && naturalVHalf > 0
@@ -81,7 +82,12 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       powerExponent !== undefined &&
       powerExponent > 0
 
-    if ((isNatural && !hasNaturalInputs) || (isPower && !hasPowerInputs) || (!isNatural && !isPower && !hasLinearInputs)) {
+    if (
+      (isNatural && !hasNaturalInputs) ||
+      (isPower && !hasPowerInputs) ||
+      (isQuadratic && !hasThresholdInputs) ||
+      (!isNatural && !isPower && !isQuadratic && !hasThresholdInputs)
+    ) {
       ctx.fillStyle = '#777'
       ctx.font = '16px sans-serif'
       ctx.textAlign = 'center'
@@ -145,6 +151,14 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       return maxSensX - delta * Math.exp(-k * omegaAdjusted)
     }
 
+    const quadraticSensitivityAt = (speed: number) => {
+      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
+      const vCap = maxThreshold ?? 0
+      if (vCap <= 0) return maxSensX
+      const t = clamp(omegaAdjusted / vCap, 0, 1)
+      return minSensX + (maxSensX - minSensX) * t * t
+    }
+
     const powerSensitivityAt = (speed: number) => {
       const vRef = powerVRef ?? 0
       const exponent = powerExponent ?? 0
@@ -162,6 +176,9 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       }
       if (isPower) {
         return powerSensitivityAt(speed)
+      }
+      if (isQuadratic) {
+        return quadraticSensitivityAt(speed)
       }
       const denom = (maxThreshold ?? 0) - (minThreshold ?? 0)
       if (denom <= 0) {

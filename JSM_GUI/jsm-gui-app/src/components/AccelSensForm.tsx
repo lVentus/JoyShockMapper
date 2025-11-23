@@ -51,6 +51,7 @@ export function AccelSensForm({
             <option value="LINEAR">Linear</option>
             <option value="NATURAL">Natural</option>
             <option value="POWER">Power</option>
+            <option value="QUADRATIC">Quadratic</option>
           </select>
         </label>
       </div>

@@ -777,13 +777,18 @@ const handleDeleteLibraryProfile = async (name: string) => {
           next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
           return next
         }
-        if (upper === 'NATURAL' || upper === 'POWER') {
+        if (upper === 'NATURAL' || upper === 'POWER' || upper === 'QUADRATIC') {
           next = updateKeymapEntry(next, resolveSensitivityKey('ACCEL_CURVE'), [upper])
           if (upper === 'NATURAL') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
-          } else {
+          } else if (upper === 'POWER') {
             next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+          } else {
+            // Quadratic and other threshold-based curves
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_NATURAL_VHALF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_VREF'))
+            next = removeKeymapEntry(next, resolveSensitivityKey('ACCEL_POWER_EXPONENT'))
           }
         }
         return next
