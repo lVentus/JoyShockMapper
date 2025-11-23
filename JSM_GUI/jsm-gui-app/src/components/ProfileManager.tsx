@@ -16,6 +16,8 @@ type ProfileManagerProps = {
   onDeleteProfile: (name: string) => void
   onAddProfile: () => void
   onLoadLibraryProfile: (name: string) => void
+  onApplyProfile?: () => void
+  applyDisabled?: boolean
 }
 
 export function ProfileManager({
@@ -33,6 +35,8 @@ export function ProfileManager({
   onDeleteProfile,
   onAddProfile,
   onLoadLibraryProfile,
+  onApplyProfile: _onApplyProfile,
+  applyDisabled: _applyDisabled = false,
 }: ProfileManagerProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [confirmingProfile, setConfirmingProfile] = useState<string | null>(null)

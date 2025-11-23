@@ -99,6 +99,8 @@ type KeymapControlsProps = {
   onScrollSensChange?: (value: string) => void
   stickModeShiftAssignments?: Record<string, { target: 'LEFT' | 'RIGHT'; mode: string }[]>
   onStickModeShiftChange?: (button: string, target: 'LEFT' | 'RIGHT', mode?: string) => void
+  adaptiveTriggerValue?: string
+  onAdaptiveTriggerChange?: (value: string) => void
 }
 
 type ButtonDefinition = {
@@ -603,7 +605,7 @@ export function KeymapControls({
   scrollSens,
   onScrollSensChange,
   adaptiveTriggerValue = '',
-  onAdaptiveTriggerChange,
+  onAdaptiveTriggerChange = () => {},
 }: KeymapControlsProps) {
   const [layout, setLayout] = useState<ControllerLayout>('playstation')
   const [stickView, setStickView] = useState<'bindings' | 'modes'>('bindings')

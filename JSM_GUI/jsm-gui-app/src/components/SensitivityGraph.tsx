@@ -136,8 +136,19 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     ctx.fillText('RWS', 0, 0)
     ctx.restore()
 
-    const axisMaxX = Math.max(MAX_OMEGA, maxThreshold ?? 0, powerVRef ?? 0, (sigmoidMid ?? 0) + (sigmoidWidth ?? 0))
-    const axisMaxY = Math.max(minSensX, maxSensX, 2)
+    const safeMinSensX = minSensX ?? 0
+    const safeMaxSensX = maxSensX ?? safeMinSensX
+    const safeMinThreshold = minThreshold ?? 0
+    const safeMaxThreshold = maxThreshold ?? 0
+    const safeNaturalVHalf = naturalVHalf ?? 0
+    const safePowerVRef = powerVRef ?? 0
+    const safePowerExponent = powerExponent ?? 0
+    const safeSigmoidMid = sigmoidMid ?? 0
+    const safeSigmoidWidth = sigmoidWidth ?? 0
+    const safeJumpTau = jumpTau ?? 0
+
+    const axisMaxX = Math.max(MAX_OMEGA, safeMaxThreshold, safePowerVRef, safeSigmoidMid + safeSigmoidWidth)
+    const axisMaxY = Math.max(safeMinSensX, safeMaxSensX, 2)
 
     const toX = (speed: number) => paddingLeft + (graphWidth * (speed / axisMaxX))
     const toY = (sens: number) => paddingTop + graphHeight - (graphHeight * (sens / axisMaxY))
@@ -168,36 +179,36 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
     }
 
     const naturalSensitivityAt = (speed: number) => {
-      const vHalf = naturalVHalf ?? 0
-      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
-      const delta = maxSensX - minSensX
+      const vHalf = safeNaturalVHalf
+      const omegaAdjusted = Math.max(0, speed - safeMinThreshold)
+      const delta = safeMaxSensX - safeMinSensX
       const k = Math.log(2) / vHalf
-      return maxSensX - delta * Math.exp(-k * omegaAdjusted)
+      return safeMaxSensX - delta * Math.exp(-k * omegaAdjusted)
     }
 
     const quadraticSensitivityAt = (speed: number) => {
-      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
-      const vCap = maxThreshold ?? 0
-      if (vCap <= 0) return maxSensX
+      const omegaAdjusted = Math.max(0, speed - safeMinThreshold)
+      const vCap = safeMaxThreshold
+      if (vCap <= 0) return safeMaxSensX
       const t = clamp(omegaAdjusted / vCap, 0, 1)
-      return minSensX + (maxSensX - minSensX) * t * t
+      return safeMinSensX + (safeMaxSensX - safeMinSensX) * t * t
     }
 
     const powerSensitivityAt = (speed: number) => {
-      const vRef = powerVRef ?? 0
-      const exponent = powerExponent ?? 0
-      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
-      if (vRef <= 0 || exponent <= 0 || omegaAdjusted <= 0) return minSensX
+      const vRef = safePowerVRef
+      const exponent = safePowerExponent
+      const omegaAdjusted = Math.max(0, speed - safeMinThreshold)
+      if (vRef <= 0 || exponent <= 0 || omegaAdjusted <= 0) return safeMinSensX
       const x = omegaAdjusted / vRef
       const u = Math.pow(x, exponent)
       const t = clamp(1 - Math.exp(-u), 0, 1)
-      return minSensX + (maxSensX - minSensX) * t
+      return safeMinSensX + (safeMaxSensX - safeMinSensX) * t
     }
 
     const sigmoidSensitivityAt = (speed: number) => {
-      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
-      const vMid = sigmoidMid ?? 0
-      const width = sigmoidWidth ?? 0
+      const omegaAdjusted = Math.max(0, speed - safeMinThreshold)
+      const vMid = safeSigmoidMid
+      const width = safeSigmoidWidth
       const w = width > 0 ? width : 1e-6
       const raw = (x: number) => {
         const z = (x - vMid) / w
@@ -208,15 +219,15 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       const denom = 1 - sigma0
       let t = denom > 0 ? (sigma - sigma0) / denom : 0
       t = clamp(t, 0, 1)
-      return minSensX + (maxSensX - minSensX) * t
+      return safeMinSensX + (safeMaxSensX - safeMinSensX) * t
     }
 
     const jumpSensitivityAt = (speed: number) => {
-      const omegaAdjusted = Math.max(0, speed - (minThreshold ?? 0))
-      const vJump = maxThreshold ?? 0
-      const tau = jumpTau ?? 0
+      const omegaAdjusted = Math.max(0, speed - safeMinThreshold)
+      const vJump = safeMaxThreshold
+      const tau = safeJumpTau
       if (tau <= 0) {
-        return omegaAdjusted < vJump ? minSensX : maxSensX
+        return omegaAdjusted < vJump ? safeMinSensX : safeMaxSensX
       }
       const raw = (x: number) => {
         if (x >= vJump) return 1
@@ -227,7 +238,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       const denom = 1 - raw0
       const r = raw(omegaAdjusted)
       const t = denom > 0 ? clamp((r - raw0) / denom, 0, 1) : 0
-      return minSensX + (maxSensX - minSensX) * t
+      return safeMinSensX + (safeMaxSensX - safeMinSensX) * t
     }
 
     const sensitivityAt = (speed: number) => {
@@ -246,12 +257,12 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       if (isJump) {
         return jumpSensitivityAt(speed)
       }
-      const denom = (maxThreshold ?? 0) - (minThreshold ?? 0)
+      const denom = safeMaxThreshold - safeMinThreshold
       if (denom <= 0) {
-        return speed > (minThreshold ?? 0) ? maxSensX : minSensX
+        return speed > safeMinThreshold ? safeMaxSensX : safeMinSensX
       }
-      const progress = clamp((speed - (minThreshold ?? 0)) / denom, 0, 1)
-      return minSensX + progress * (maxSensX - minSensX)
+      const progress = clamp((speed - safeMinThreshold) / denom, 0, 1)
+      return safeMinSensX + progress * (safeMaxSensX - safeMinSensX)
     }
 
     const drawSensitivityCurve = () => {
@@ -309,7 +320,7 @@ export function SensitivityGraph(props: SensitivityGraphProps) {
       const speed = clamp(live.speed, 0, axisMaxX)
       const sensX = live.sensX ?? sensitivityAt(speed)
       const output = speed * sensX
-      const maxOutput = axisMaxX * maxSensX
+      const maxOutput = axisMaxX * safeMaxSensX
       const normalizedOutput = (output / maxOutput) * axisMaxY
 
       const drawDot = (value: number, color: string) => {
